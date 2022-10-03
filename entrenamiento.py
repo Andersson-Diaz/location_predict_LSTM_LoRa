@@ -33,28 +33,28 @@ dataset.info()
 time = dataset['hour']
 dataset['latitude']=dataset['latitude'].astype('float64')
 dataset['longitude']=dataset['longitude'].astype('float64')
-time_step = 30
+window = 30
 last = int(len(dataset)/5.0)
-set_entrenamiento = dataset[:-last]
-set_validacion = dataset[-last-time_step:]
-set_entrenamiento.reset_index(inplace=True, drop=True)
-set_validacion.reset_index(inplace=True, drop=True)
-x= np.column_stack((set_entrenamiento.iloc[:,[4]],set_entrenamiento.iloc[:,[5]],set_entrenamiento.iloc[:,[8]],set_entrenamiento.iloc[:,[12]]))
+set_training = dataset[:-last]
+set_validation = dataset[-last-window:]
+set_training.reset_index(inplace=True, drop=True)
+set_validation.reset_index(inplace=True, drop=True)
+x= np.column_stack((set_training.iloc[:,[4]],set_training.iloc[:,[5]],set_training.iloc[:,[8]],set_training.iloc[:,[12]]))
 # Normalización del set de entrenamiento
-sc1 = MinMaxScaler(feature_range=(0,1))
-set_entrenamiento_escalado = sc1.fit_transform(x)
+scaler = MinMaxScaler(feature_range=(0,1))
+set_training_escaled = scaler.fit_transform(x)
 
 #Declaracion de vectores de entrada y salida para el entrenamiento
 X_train = []
 Y_train = []
 
-m = len(set_entrenamiento_escalado)
+m = len(set_training_escaled)
 #Crea las ventanas de datos
-for i in range(time_step,m):
-    # X: bloques de "time_step" datos: 0-time_step, 1-time_step+1, 2-time_step+2, etc
-    X_train.append(set_entrenamiento_escalado[i-time_step:i,0:5])
+for i in range(window,m):
+    # X: bloques de "window" datos: 0-window, 1-window+1, 2-window+2, etc
+    X_train.append(set_training_escaled[i-window:i,0:5])
     # Y: el siguiente dato despues de la ventana de datos
-    Y_train.append(set_entrenamiento_escalado[i,0:5])
+    Y_train.append(set_training_escaled[i,0:5])
 
 #Transforma las listas en vectores
 X_train, Y_train = np.array(X_train), np.array(Y_train)
@@ -64,25 +64,25 @@ X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 4))
 
 # Red LSTM
 #Para crear la red debemos primero definir el tamaño de los datos de entrada y del dato de salida,
-#así como el número total de neuronas (100):
-dim_entrada = (X_train.shape[1],4)
-dim_salida = 4
-na = 200
+#así como el número total de neurons (100):
+dim_in = (X_train.shape[1],4)
+dim_out = 4
+neurons = 200
 
 from keras.layers import Bidirectional
 
 modelo = Sequential()
-modelo.add(Bidirectional(LSTM(units=na, return_sequences=True, input_shape=dim_entrada)))
+modelo.add(Bidirectional(LSTM(units=neurons, return_sequences=True, input_shape=dim_in)))
 modelo.add(Bidirectional(LSTM(units=100, return_sequences=True)))
 modelo.add(Bidirectional(LSTM(50)))
 modelo.add(Dropout(0.2))
-modelo.add(Dense(units=dim_salida))
+modelo.add(Dense(units=dim_out))
 modelo.compile(optimizer='Adam', loss='mse')
 modelo.fit(X_train,Y_train,epochs=500,batch_size=32)
 print(modelo.summary())
-modelo.save('path_to_my_model.h5')
+modelo.save('model_bidirectional.h5')
 import joblib
-joblib.dump(sc1, 'scaler.save')
+joblib.dump(scaler, 'scaler.save')
 
 #termina el entrenamiento del modelo para la predicción de la ubicacion
 #Comienza el entrenamiento del modelo para la prediccion del tiempo
@@ -98,40 +98,40 @@ def haversine(lat1, lon1, lat2, lon2):
     return distancia
 
 #Crea una lista con la distancia entre un punto de ubicacion y el punto anterior desde el set de entrenamiento
-distancia_entrenamiento = []
-distancia_entrenamiento.append(0)
-for i in range(0, len(set_entrenamiento)-1):
-    distancia_entrenamiento.append(haversine(set_entrenamiento.iat[i,4],set_entrenamiento.iat[i,5],set_entrenamiento.iat[i+1,4],set_entrenamiento.iat[i+1,5]))
+training_distance = []
+training_distance.append(0)
+for i in range(0, len(set_training)-1):
+    training_distance.append(haversine(set_training.iat[i,4],set_training.iat[i,5],set_training.iat[i+1,4],set_training.iat[i+1,5]))
 
 #Se crea un dataframe con la lista que contiene la distancia del conjunto de entrenamiento
-d_d_e = pd.DataFrame(distancia_entrenamiento, columns=['distancia'])
+d_d_e = pd.DataFrame(training_distance, columns=['distancia'])
 
 #Crea una lista con la distancia entre un punto de ubicacion y el punto anterior desde el set de validacion
-distancia_validacion = []
-distancia_validacion.append(0)
-for i in range(0, len(set_validacion)-1):
-    distancia_validacion.append(haversine(set_validacion.iat[i,4],set_validacion.iat[i,5],set_validacion.iat[i+1,4],set_validacion.iat[i+1,5]))
+validation_distance = []
+validation_distance.append(0)
+for i in range(0, len(set_validation)-1):
+    validation_distance.append(haversine(set_validation.iat[i,4],set_validation.iat[i,5],set_validation.iat[i+1,4],set_validation.iat[i+1,5]))
 
 #Se crea un dataframe con la lista que contiene la distancia del conjunto de validacion
-d_d_v = pd.DataFrame(distancia_validacion, columns=['distancia'])
+d_d_v = pd.DataFrame(validation_distance, columns=['distancia'])
 
 #toma la hora del conjunto de datos de entrenamiento
-time_entrenamiento = set_entrenamiento['hour']
+training_time = set_training['hour']
 #toma la hora del conjunto de datos de validacion
-time_validacion = set_validacion['hour']
+validation_time = set_validation['hour']
 
 
 #Calcula la diferencia de tiempo entre un punto de ubicacion y el anterior en el set de entrenamiento
-medida_de_tiempo_entrenamiento = []
-for i in range(0,len(time_entrenamiento)-1):
-    medida_de_tiempo_entrenamiento.append(time_entrenamiento[i+1]-time_entrenamiento[i])
-medida_de_tiempo_entrenamiento
+training_time_measure = []
+for i in range(0,len(training_time)-1):
+    training_time_measure.append(training_time[i+1]-training_time[i])
+training_time_measure
 
 #Calcula la diferencia de tiempo entre un punto de ubicacion y el anterior en el set de validacion
-medida_de_tiempo_validacion = []
-for i in range(0,len(time_validacion)-1):
-    medida_de_tiempo_validacion.append(time_validacion[i+1]-time_validacion[i])
-medida_de_tiempo_validacion
+validation_time_measure = []
+for i in range(0,len(validation_time)-1):
+    validation_time_measure.append(validation_time[i+1]-validation_time[i])
+validation_time_measure
 
 #Creamos un objeto deltatime de valor 1 segundo
 #Al dividir deltatime / deltatime se obtiene un valor de tipo float
@@ -146,70 +146,58 @@ delta = timedelta(
     weeks=0 )
 
 #Para EL ENTRENAMIENTO Cambiamos el tipo de dato a flotante, el resultado es un número en segundos
-duracion_entrenamiento = []
-duracion_entrenamiento.append(10)
-for i in range(0,len(medida_de_tiempo_entrenamiento)):
-    duracion_entrenamiento.append(medida_de_tiempo_entrenamiento[i]/delta)
-duracion_entrenamiento
+set_training_in_seconds = []
+set_training_in_seconds.append(10)
+for i in range(0,len(training_time_measure)):
+    set_training_in_seconds.append(training_time_measure[i]/delta)
+set_training_in_seconds
 
 #Agrupamos tiempo y distancia para usarlas como entradas del modelo de entrenamiento
-n_e= np.column_stack((duracion_entrenamiento,distancia_entrenamiento))
+training_stack_in= np.column_stack((set_training_in_seconds,training_distance))
 
 #Para la validacion Cambiamos el tipo de dato a flotante, el resultado es un número en segundos
-duracion_validacion = []
-duracion_validacion.append(10)
-for i in range(0,len(medida_de_tiempo_validacion)):
-    duracion_validacion.append(medida_de_tiempo_validacion[i]/delta)
-duracion_validacion
-
-#Agrupamos tiempo y distancia para usarlas como entradas en la prediccion del modelo
-n_v= np.column_stack((duracion_validacion,distancia_validacion))
-
-#Se crea un dataframe a partir de la lista
-duracion_data_entrenamiento = pd.DataFrame(duracion_entrenamiento, columns=['duracion'])
-duracion_data_entrenamiento
-
-#Se crea un dataframe a partir de la lista
-duracion_data_validacion = pd.DataFrame(duracion_validacion, columns=['duracion'])
-duracion_data_validacion
+set_validation_in_seconds = []
+set_validation_in_seconds.append(10)
+for i in range(0,len(validation_time_measure)):
+    set_validation_in_seconds.append(validation_time_measure[i]/delta)
+set_validation_in_seconds
 
 #normalizamos el conjunto de datos de entrada
 sc = MinMaxScaler(feature_range=(0,1))
-time_entrenamiento_escalado = sc.fit_transform(n_e)
+set_training_time_scaled = sc.fit_transform(training_stack_in)
 
-# La red LSTM tendrá como entrada "time_step" datos consecutivos, y como salida 1 dato (la predicción se hace a
-# partir de esos "time_step" datos). Se conformará de esta forma el set de entrenamiento
-time_step_t = 30
-X_train_duracion = []
-Y_train_duracion = []
-n = len(n_e)
+# La red LSTM tendrá como entrada "window" datos consecutivos, y como salida 1 dato (la predicción se hace a
+# partir de esos "window" datos). Se conformará de esta forma el set de entrenamiento
+window_t = 30
+X_train_time = []
+Y_train_time = []
 
 #Se agregan las ventanas del set de entrenamiento
-for i in range(time_step,n):
-    # X: bloques de "time_step" datos: 0-time_step, 1-time_step+1, 2-time_step+2, etc
-    X_train_duracion.append(time_entrenamiento_escalado[i-time_step:i,0:2])
+for i in range(window,len(training_stack_in)):
+    # X: bloques de "window" datos: 0-window, 1-window+1, 2-window+2, etc
+    X_train_time.append(set_training_time_scaled[i-window:i,0:2])
     # Y: el siguiente dato
-    Y_train_duracion.append(time_entrenamiento_escalado[i,0:2])
+    Y_train_time.append(set_training_time_scaled[i,0:2])
 
 #Se pasan las listas a arrays
-X_train_duracion, Y_train_duracion = np.array(X_train_duracion), np.array(Y_train_duracion)
+X_train_time, Y_train_time = np.array(X_train_time), np.array(Y_train_time)
 
 # Reshape X_train para que se ajuste al modelo en Keras
-X_train_duracion = np.reshape(X_train_duracion, (X_train_duracion.shape[0], X_train_duracion.shape[1], 2))
+X_train_time = np.reshape(X_train_time, (X_train_time.shape[0], X_train_time.shape[1], 2))
 
 # Red LSTM
 #Para crear la red debemos primero definir el tamaño de los datos de entrada y del dato de salida,
-#así como el número total de neuronas (na_duracion):
-dim_entrada_duracion = (X_train_duracion.shape[1],2)
+#así como el número total de neurons (neuronas_tiempo):
+dim_entrada_duracion = (X_train_time.shape[1],2)
 dim_salida_duracion = 2
-na_duracion = 100
+neuronas_tiempo = 100
 
 #Cear un contenedor usando el módulo Sequential:
 modelo_duracion = Sequential()
 #añadimos el modelo
-modelo_duracion.add(LSTM(units=na_duracion, return_sequences=True, input_shape=dim_entrada_duracion))
+modelo_duracion.add(LSTM(units=neuronas_tiempo, return_sequences=True, input_shape=dim_entrada_duracion))
 #agregamos una capa lSTM
-modelo_duracion.add(LSTM(units=na_duracion))
+modelo_duracion.add(LSTM(units=neuronas_tiempo))
 #evitamos el sobreentrtenamiento con dropout
 modelo_duracion.add(Dropout(0.2))
 #Dense para la capa de salida
@@ -220,7 +208,7 @@ modelo_duracion.compile(optimizer='rmsprop', loss='mse')
 
 #implementamos el modelo con 20 iteraciones, epochs
 #Presentando a la res lstm lotess de 32 datos
-modelo_duracion.fit(X_train_duracion,Y_train_duracion,epochs=100,batch_size=64)
+modelo_duracion.fit(X_train_time,Y_train_time,epochs=100,batch_size=64)
 
 #Guardamos el modelo
 modelo_duracion.save('tiempo_entrenado.h5')

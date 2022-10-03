@@ -67,20 +67,20 @@ X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 4))
 #así como el número total de neuronas (100):
 dim_entrada = (X_train.shape[1],4)
 dim_salida = 4
-na = 100
+na = 200
 
 from keras.layers import Bidirectional
 
 modelo = Sequential()
 modelo.add(LSTM(units=na,  return_sequences=True, input_shape=dim_entrada))
-modelo.add(LSTM(50,  return_sequences=True))
-modelo.add(LSTM(25,  return_sequences=True))
-modelo.add(LSTM(10,  input_shape=dim_entrada))
+modelo.add(LSTM(200,  return_sequences=True))
+modelo.add(LSTM(200,  return_sequences=True))
+modelo.add(LSTM(200,  input_shape=dim_entrada))
 modelo.add(Dropout(0.2))
 modelo.add(Dense(units=dim_salida))
 modelo.compile(optimizer='Adam', loss='mse')
-modelo.fit(X_train,Y_train,epochs=1000,batch_size=100)
-
+modelo.fit(X_train,Y_train,epochs=500,batch_size=32)
+print(modelo.summary())
 modelo.save('path_to_my_model.h5')
 import joblib
 joblib.dump(sc1, 'scaler.save')
