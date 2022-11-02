@@ -18,6 +18,7 @@ from datetime import datetime
 from datetime import timedelta
 import math
 import MySQLdb
+import datetime
 
 
 # import pandas as pd
@@ -33,14 +34,15 @@ def haversine(lat1, lon1, lat2, lon2):
     return distance
 
 
-def ejecutar_prediccion_escenario_1(idx):  # Sin LoRa
-    try:
+def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
+    #try:
         print('inicio de ejecucion de escenario 1')
         import MySQLdb
         import pandas as pd
         import numpy as np
 
         window = 30
+        
         # datos para la conexion a la base de datos
         hostname = '82.180.175.58'
         username = 'u813407238_lora'
@@ -48,17 +50,17 @@ def ejecutar_prediccion_escenario_1(idx):  # Sin LoRa
         database = 'u813407238_seguimiento'
         # inicialmente hace la conexion con la base de datos
         myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-
+        
         # genera la lectura de la base de datos
         dataset = pd.read_sql("SELECT * FROM LoRaWAN_messages order by id DESC LIMIT 31", myConnection)
-        dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
+        #dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
         print("Va a imprimir el dataset leido de la BD...")
         # dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
         dataset.info()
-        # time = dataset['hour']
         dataset['latitude'] = dataset['latitude'].astype('float64')
         dataset['longitude'] = dataset['longitude'].astype('float64')
-
+        
+        #time = dataset['hour']
         set_prediccion = pd.DataFrame()
         for i in range(0, len(dataset)):
             set_prediccion = set_prediccion.append((dataset[(len(dataset) - i - 1):(len(dataset) - i)]))
@@ -208,50 +210,97 @@ def ejecutar_prediccion_escenario_1(idx):  # Sin LoRa
             #hora = prediction_hour[i]
             #print("hora:")
             #print(hora)
+        #Agrupa datos de latitud, longitud y hora
         prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction_hour))
         print(prediction_time_hour)
+        #termina prediccion
 
-        hora_sistema = datetime.now()
-        print(hora_sistema)
+        myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
+        
+        # genera la lectura de la base de datos
+        dataset = pd.read_sql("SELECT * from LoRaWAN_messages WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", myConnection)
+        #dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
+        print("Va a imprimir el dataset leido de la BD...")
+        # dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
+        dataset.info()
+        dataset['latitude'] = dataset['latitude'].astype('float64')
+        dataset['longitude'] = dataset['longitude'].astype('float64')
 
-        hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second, microseconds=hora_sistema.microsecond)
-        print(hora_sistema)
+        bol = True
+        #while(dataset[id_anterior,7]==NaN & dataset[id_anterior,1]=='tarjeta2-cubecell'):
+        while(bol):
+            
+            #id_anterior=+1       
 
-        diferencia_tiempo = []
-        for i in range(0,len(prediction_hour)):
-            diferencia_tiempo.append(abs(hora_sistema - prediction_hour[i]))
+            hora_sistema = datetime.now()
+            print(hora_sistema)
 
-        print(diferencia_tiempo)
+            hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second, microseconds=hora_sistema.microsecond)
+            print(hora_sistema)
 
-        index = diferencia_tiempo.index(min(diferencia_tiempo))
-        print(index)
-        lat = prediction_time_hour[index,0]
-        lon = prediction_time_hour[index,1]
-        hour = prediction_time_hour[index,2]
+            diferencia_tiempo = []
+            for i in range(0,len(prediction_hour)):
+                diferencia_tiempo.append(abs(hora_sistema - prediction_hour[i]))
 
-        mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-        cur = mynewConnection.cursor()
-        cadena_SQL = "INSERT INTO Tabla_General (latitude_p_e_1, longitude_p_e_1, hour_p, type_record) VALUES(%s,%s,%s,%s)"
-        val = (lat, lon, hour, 1)
-        cur.execute(cadena_SQL, val)
-        print("Registro creado ")
-        #print('tipo de dato: ',type(idx))
-        # Si no se graba, no guarda el cambio de la creacion, guarda con commit
-        mynewConnection.commit()
-        # Cierra la conexion
-        mynewConnection.close()
+            index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
+            print(index_actual)
+            #aux = index_actual
+            """ironl= pd.read_csv('index_anterior.csv')
+            index_anterior = ironl.iloc[0, 1]
+            #while(index_actual!=index_anterior):
+            df = pd.DataFrame()
+            df['valor'] = index_actual
+            df.to_csv('index_anterior.csv')
+            print('Guardar valor de index_actual escenario 1')
 
+            ironl= pd.read_csv('index_anterior.csv')
+            index_anterior = ironl.iloc[0, 1]"""
 
-        print('fin de prediccion de tiempo')
+            lat = prediction_time_hour[index_actual,0]
+            lon = prediction_time_hour[index_actual,1]
+            hour = prediction_time_hour[index_actual,2]
+
+            
+            tim = datetime.timedelta(seconds=hour.total_seconds())
+            print('hora en datetime: ',tim)
+            mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
+            cur = mynewConnection.cursor()
+            cadena_SQL = "INSERT INTO Tabla_General (latitude_p_e_1, longitude_p_e_1, hour_p, type_record) VALUES(%s,%s,%s,%s)"
+            val = (lat, lon, tim, 1)
+            cur.execute(cadena_SQL, val)
+            last_id = cur.lastrowid
+            print('last id: ',last_id)
+            print("Registro creado ")
+            #print('tipo de dato: ',type(idx))
+            # Si no se graba, no guarda el cambio de la creacion, guarda con commit
+            mynewConnection.commit()
+            # Cierra la conexion
+            mynewConnection.close()
+
+            time.sleep(3)
+
+            myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
+            # genera la lectura de la base de datos
+            dataset = pd.read_sql("SELECT * from LoRaWAN_messages WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", myConnection)
+            #dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
+            print("Va a imprimir el dataset leido de la BD...")
+            # dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
+            dataset.info()
+            dataset['latitude'] = dataset['latitude'].astype('float64')
+            dataset['longitude'] = dataset['longitude'].astype('float64')
+            if last_id!=len(dataset):
+                bol = False
+
+""" print('fin de prediccion de tiempo')
     except OSError:
-        print('El modelo no ha sido entrenado aun')
+        print('El modelo no ha sido entrenado aun Oserror')
         monitor()
     except:
         print('El modelo no ha sido entrenado aun')
         monitor()
     finally:
         print('finally')
-        monitor()
+        monitor()"""
 
 
 def ejecutar_prediccion_escenario2(idx):  # Cuando hay conexión LoRa sin GPS
@@ -367,7 +416,7 @@ def monitor():
     myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
 
     # genera la lectura de la base de datos
-    dataset2 = pd.read_sql("SELECT * FROM LoRaWAN_messages order by id DESC LIMIT 1", myConnection)
+    dataset2 = pd.read_sql("SELECT * FROM LoRaWAN_messages WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", myConnection)
     dataset2['id'] = dataset2['id'].astype('float64')
     idx = dataset2.iloc[0, 0]
     idx.astype('float64')
@@ -376,11 +425,11 @@ def monitor():
 
     # guarda la diferencia de tiempo en segundos desde la hora actual hasta la hora del ultimo registro recibido.
     hora_sistema = datetime.now()
-    print(dataset2['hour'])
+    #print(dataset2['hour'])
     hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second,
                              microseconds=hora_sistema.microsecond)
-    print(hora_sistema)
-    print(abs(dataset2['hour'] - hora_sistema))
+    print('hora actual del sistema: ',hora_sistema)
+    #print(abs(dataset2['hour'] - hora_sistema))
     delta = timedelta(
         days=0,
         seconds=1,
@@ -390,7 +439,7 @@ def monitor():
         hours=0,
         weeks=0)
     # En s se guarda la diferencia de tiempo
-    s = abs(dataset2['hour'] - hora_sistema) / delta
+    s = abs(dataset2.iloc[0, 3] - hora_sistema) / delta
     print(s)
 
     # Llegó un nuevo dato?
@@ -401,22 +450,22 @@ def monitor():
         # time = dataset['hour']
         dataset2['latitude'] = dataset2['latitude'].astype('float64')
         dataset2['longitude'] = dataset2['longitude'].astype('float64')
-        iro = dataset2.iloc[0, [0]].values
+        iro = dataset2.iloc[0, 0]
         df = pd.DataFrame()
-        df['valor'] = iro
+        df['valor'] = [iro]
         df.to_csv('id_prediccion.csv')
         print('Guardar valor de id prediccion')
 
         # dataset2= pd.read_sql("SELECT * FROM LoRaWAN_messages_calle_5 order by id ASC lIMIT 1",myConnection)
-        print('Valor medido de id', dataset2.iloc[0, [0]].values)
-        if dataset2.iloc[0, [4]].values == 0:
+        print('Valor medido de id', dataset2.iloc[0, 0])
+        if dataset2.iloc[0, 4] == 0:
             print('inicia condicional')
             ejecutar_prediccion_escenario2(idx)
         else:
             print('Inicio monitorizacion')
             monitor()
     # ¿Ha tardado un dato en llegar mas de 13 segundos?
-    elif s.values > (13):
+    elif s > (13):
         ejecutar_prediccion_escenario_1(idx)
     else:
         print('No es necesario predecir')
