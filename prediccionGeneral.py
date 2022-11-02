@@ -14,7 +14,7 @@ from keras.layers import Dense, LSTM
 from keras.layers import Dropout
 
 import time
-from datetime import datetime
+
 from datetime import timedelta
 import math
 import MySQLdb
@@ -35,7 +35,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
-    #try:
+    try:
         print('inicio de ejecucion de escenario 1')
         import MySQLdb
         import pandas as pd
@@ -213,7 +213,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         #Agrupa datos de latitud, longitud y hora
         prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction_hour))
         print(prediction_time_hour)
-        #termina prediccion
+        #Genera datos p´redichos prediccion
 
         myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         
@@ -231,7 +231,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         while(bol):
             
             #id_anterior=+1       
-
+            from datetime import datetime
             hora_sistema = datetime.now()
             print(hora_sistema)
 
@@ -240,58 +240,79 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
 
             diferencia_tiempo = []
             for i in range(0,len(prediction_hour)):
-                diferencia_tiempo.append(abs(hora_sistema - prediction_hour[i]))
+                diferencia_tiempo.append(abs(hora_sistema - prediction_time_hour[i,2]))
 
             index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
             print(index_actual)
-            #aux = index_actual
-            """ironl= pd.read_csv('index_anterior.csv')
-            index_anterior = ironl.iloc[0, 1]
-            #while(index_actual!=index_anterior):
-            df = pd.DataFrame()
-            df['valor'] = index_actual
-            df.to_csv('index_anterior.csv')
-            print('Guardar valor de index_actual escenario 1')
+            diferencia_tiempo[index_actual].total_seconds()
 
-            ironl= pd.read_csv('index_anterior.csv')
-            index_anterior = ironl.iloc[0, 1]"""
+            while(diferencia_tiempo[index_actual].total_seconds()<=1 and index_actual<29):
 
-            lat = prediction_time_hour[index_actual,0]
-            lon = prediction_time_hour[index_actual,1]
-            hour = prediction_time_hour[index_actual,2]
+                #aux = index_actual
+                """ironl= pd.read_csv('index_anterior.csv')
+                index_anterior = ironl.iloc[0, 1]
+                #while(index_actual!=index_anterior):
+                df = pd.DataFrame()
+                df['valor'] = index_actual
+                df.to_csv('index_anterior.csv')
+                print('Guardar valor de index_actual escenario 1')
 
-            
-            tim = datetime.timedelta(seconds=hour.total_seconds())
-            print('hora en datetime: ',tim)
-            mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-            cur = mynewConnection.cursor()
-            cadena_SQL = "INSERT INTO Tabla_General (latitude_p_e_1, longitude_p_e_1, hour_p, type_record) VALUES(%s,%s,%s,%s)"
-            val = (lat, lon, tim, 1)
-            cur.execute(cadena_SQL, val)
-            last_id = cur.lastrowid
-            print('last id: ',last_id)
-            print("Registro creado ")
-            #print('tipo de dato: ',type(idx))
-            # Si no se graba, no guarda el cambio de la creacion, guarda con commit
-            mynewConnection.commit()
-            # Cierra la conexion
-            mynewConnection.close()
+                ironl= pd.read_csv('index_anterior.csv')
+                index_anterior = ironl.iloc[0, 1]"""
 
-            time.sleep(3)
+                lat = prediction_time_hour[index_actual,0]
+                lon = prediction_time_hour[index_actual,1]
+                hour = prediction_time_hour[index_actual,2]
+                print(prediction_time_hour)
 
-            myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-            # genera la lectura de la base de datos
-            dataset = pd.read_sql("SELECT * from LoRaWAN_messages WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", myConnection)
-            #dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
-            print("Va a imprimir el dataset leido de la BD...")
-            # dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
-            dataset.info()
-            dataset['latitude'] = dataset['latitude'].astype('float64')
-            dataset['longitude'] = dataset['longitude'].astype('float64')
-            if last_id!=len(dataset):
-                bol = False
+                import datetime
+                tim = datetime.timedelta(seconds=hour.total_seconds())
+                print('hora en datetime: ',tim)
+                mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
+                cur = mynewConnection.cursor()
+                cadena_SQL = "INSERT INTO Tabla_General (dev_id,predicted_latitude, predicted_longitude, predicted_hour, type_record) VALUES(%s,%s,%s,%s,%s)"
+                val = ('tarjeta2-cubecell',lat, lon, tim, 1)
+                cur.execute(cadena_SQL, val)
+                last_id = cur.lastrowid
+                print('last id: ',last_id)
+                print("Registro creado ")
+                #print('tipo de dato: ',type(idx))
+                # Si no se graba, no guarda el cambio de la creacion, guarda con commit
+                mynewConnection.commit()
+                # Cierra la conexion
+                mynewConnection.close()
+                asd = np.delete(prediction_time_hour, index_actual, axis=0)
+                print('index actual 1: ', index_actual)
+                print('despues de borrar',asd)
+                from datetime import datetime
+                hora_sistema = datetime.now()
+                #print(hora_sistema)
 
-""" print('fin de prediccion de tiempo')
+                hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second, microseconds=hora_sistema.microsecond)
+                #print(hora_sistema)
+
+                diferencia_tiempo = []
+                for i in range(0,len(asd)):
+                    diferencia_tiempo.append(abs(hora_sistema - asd[i,2]))
+
+                index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
+                print('index actual 2: ',index_actual)
+                #print('nuevo index actual: ',index_actual)
+                time.sleep(1)
+
+                myConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
+                # genera la lectura de la base de datos
+                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", myConnection)
+                #dataset.drop(index=dataset[dataset['latitude'] == '0'].index, inplace=True)
+                #print("Va a imprimir el dataset leido de la BD...")
+                # dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
+                #dataset.info()
+                #dataset['latitude'] = dataset['latitude'].astype('float64')
+                #dataset['longitude'] = dataset['longitude'].astype('float64')
+                print('last id: ',last_id,'    iloc: ', dataset.iloc[0,0])
+                if last_id!=dataset.iloc[0,0]:
+                    bol = False
+                    print('fin de prediccion de tiempo')
     except OSError:
         print('El modelo no ha sido entrenado aun Oserror')
         monitor()
@@ -300,7 +321,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         monitor()
     finally:
         print('finally')
-        monitor()"""
+        monitor()
 
 
 def ejecutar_prediccion_escenario2(idx):  # Cuando hay conexión LoRa sin GPS
