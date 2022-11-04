@@ -264,7 +264,7 @@ while(o==0):
         myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )
         
         # genera la lectura de la base de datos
-        dataset= pd.read_sql("SELECT * FROM LoRaWAN_messages order by id",myConnection)
+        dataset= pd.read_sql("SELECT * FROM LoRaWAN_messages WHERE dev_id = 'tarjeta2-cubecell' order by id",myConnection)
         print('longitud dataset',len(dataset))
         print("Va a imprimir el dataset leido de la BD...")
         #dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
