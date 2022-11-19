@@ -1,16 +1,18 @@
-from tokenize import Number
+#from tokenize import Number
 import numpy as np
-np.random.seed(100)
+#np.random.seed(83)
 import matplotlib.pyplot as plt
 import pandas as pd
+import tensorflow as tf
+tf.random.set_seed(100)
 
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from keras.layers import Dropout
-import tensorflow as tf
-print(tf.__version__)
-from keras.utils import to_categorical
+#import tensorflow as tf
+#print('Version de tensorflow ',tf.__version__)
+#from keras.utils import to_categorical
 from keras.layers import Flatten
 import time
 from datetime import datetime
@@ -36,14 +38,7 @@ dataset.drop(index=dataset[dataset['latitude']=='0'].index, inplace=True)
 time = dataset['hour']
 dataset['latitude']=dataset['latitude'].astype('float64')
 dataset['longitude']=dataset['longitude'].astype('float64')
-def haversine(lat1, lon1, lat2, lon2):
-    rad=math.pi/180
-    dlat=lat2-lat1
-    dlon=lon2-lon1
-    R=6372.795477598
-    a=(math.sin(rad*dlat/2))**2 + math.cos(rad*lat1)*math.cos(rad*lat2)*(math.sin(rad*dlon/2))**2
-    distancia=2*R*math.asin(math.sqrt(a))
-    return distancia
+
 
 time_step = 30
 last = int(len(dataset)/5.0)
@@ -75,16 +70,16 @@ dim_in = (X_train.shape[1],4)
 dim_out = 4
 neurons = 100
 modelo = Sequential()
-modelo.add(LSTM(units=10,  return_sequences=True, input_shape=dim_in))
-modelo.add(LSTM(190, activation = 'elu', return_sequences=True))
-modelo.add(LSTM(10, activation = 'elu', return_sequences=True))
-#modelo.add(LSTM(200, activation = 'elu', input_shape=dim_in))
+modelo.add(LSTM(units=200, activation = 'relu',  return_sequences=True, input_shape=dim_in))
+modelo.add(LSTM(200, activation = 'relu',return_sequences=True))
+modelo.add(LSTM(50, activation = 'relu',return_sequences=True))
+#modelo.add(LSTM(200, input_shape=dim_in))
 modelo.add(Flatten())
 modelo.add(Dropout(0.0))
-opt = Adam(learning_rate=0.01)
-modelo.add(Dense(units=dim_out, activation = 'elu'))
-modelo.compile(optimizer=opt, loss='mse')
-modelo.fit(X_train,Y_train,epochs=100,batch_size=32)
+opt = Adam(learning_rate=0.001)
+modelo.add(Dense(units=dim_out ,activation = 'relu'))
+modelo.compile(optimizer=opt, loss='mse', metrics = 'mse')
+historia = modelo.fit(X_train,Y_train,epochs=500,batch_size=32)
 print(modelo.summary())
 x_test= np.column_stack((set_validacion.iloc[:,[4]],set_validacion.iloc[:,[5]],set_validacion.iloc[:,[8]],set_validacion.iloc[:,[12]]))
 array_latitud = []
@@ -130,6 +125,14 @@ mse_lat = mean_squared_error(array_latitud[time_step:],array_latitud_p, squared=
 print('mse lat: ', mse_lat)
 mse_lon = mean_squared_error(array_longitud[time_step:],array_longitud_p, squared=False)
 print('mse lon: ', mse_lon)
+def haversine(lat1, lon1, lat2, lon2):
+    rad=math.pi/180
+    dlat=lat2-lat1
+    dlon=lon2-lon1
+    R=6372.795477598
+    a=(math.sin(rad*dlat/2))**2 + math.cos(rad*lat1)*math.cos(rad*lat2)*(math.sin(rad*dlon/2))**2
+    distancia=2*R*math.asin(math.sqrt(a))
+    return distancia
 print('error medio: ',haversine(0.00000,0.00000,mse_lat,mse_lon))
 
 #Prediccion con los primeros datos del set de validacion
@@ -159,3 +162,13 @@ print('mse lon_p : ', mse_lon_p)
 
 print('error medio predicho: ',haversine(0.00000,0.00000,mse_lat_p,mse_lon_p))
 
+plt.figure(figsize=(12,6))
+plt.subplot(1,2,1)
+plt.plot(historia.history['mse'])
+plt.title('mse')
+plt.xlabel('epochs')
+plt.subplot(1,2,2)
+plt.plot(historia.history['loss'],color='orange')
+plt.title('loss')
+plt.xlabel('epochs')
+plt.show()

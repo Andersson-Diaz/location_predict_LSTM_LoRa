@@ -3,6 +3,8 @@ from tokenize import Number
 import numpy as np
 from numpy import *
 np.random.seed(4)
+import tensorflow as tf
+tf.random.set_seed(1)
 from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 import time
@@ -40,13 +42,13 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
-        dataset = pd.read_sql("SELECT * FROM LoRaWAN_messages_calle_5 WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
-        #Convierte los datos de posicion en flotantes
-        dataset['latitude'] = dataset['latitude'].astype('float64')
-        dataset['longitude'] = dataset['longitude'].astype('float64')
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
+        #Convierte los datos de posicion en flotantes           
         if 0 in dataset.latitude.values or '' in dataset.latitude.values:
             print('no hay sufucientes valores para predecir')
         else:
+            dataset['latitude'] = dataset['latitude'].astype('float64')
+            dataset['longitude'] = dataset['longitude'].astype('float64')
             #Ordena los datos de forma ascendente
             set_prediccion = pd.DataFrame()
             for i in range(0, len(dataset)):
@@ -59,10 +61,10 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             # Obtiene el valor de los indices de manera ascendente
             set_prediccion.reset_index(inplace=True, drop=True)
             #Define las características a ser ingresadas a la entrada del algoritmo de predicción
-            x_test = np.column_stack((set_prediccion.iloc[1:len(set_prediccion), [4]],
-                                    set_prediccion.iloc[1:len(set_prediccion), [5]],
+            x_test = np.column_stack((set_prediccion.iloc[1:len(set_prediccion), [7]],
                                     set_prediccion.iloc[1:len(set_prediccion), [8]],
-                                    set_prediccion.iloc[1:len(set_prediccion), [11]]))
+                                    set_prediccion.iloc[1:len(set_prediccion), [13]],
+                                    set_prediccion.iloc[1:len(set_prediccion), [17]]))
 
             try:
                 import joblib
@@ -123,8 +125,8 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             distance_validation = []            
             for i in range(0, len(set_prediccion) - 1):
                 distance_validation.append(
-                    haversine(set_prediccion.iat[i + 1, 4], set_prediccion.iat[i + 1, 5], set_prediccion.iat[i, 4],
-                            set_prediccion.iat[i, 5]))
+                    haversine(set_prediccion.iat[i + 1, 7], set_prediccion.iat[i + 1, 8], set_prediccion.iat[i, 7],
+                            set_prediccion.iat[i, 8]))
             # agrupa la duracion y la distancia para cada punto de ubicación
             n_v = np.column_stack((validation_last, distance_validation))
             #Carga el modelo entrenado y el escalador
@@ -169,7 +171,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                       
             bol = True            
             #Mientras no llegue un nuevo dato o no se hayan enviado todos los datos predichos
-            while(bol or index_actual<29):                    
+            while(bol):                    
                 from datetime import datetime
                 hora_sistema = datetime.now()                
                 #Halla la posicion predicha mas cercana a la hora actual
@@ -185,9 +187,12 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 # genera la lectura de la base de datos
                 dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)                
                 #Si llega un nuevo dato desde el dispositivo LoRa, salir de la predicción
-                if ((id_anterior!=dataset.iloc[0,0] and dataset.iloc[0,7]!='') or index_actual>=28):
+                print('id aNTERIOR: ', id_anterior)
+                print('id leído: ',dataset.iloc[0,0])
+                if (id_anterior!=dataset.iloc[0,0] or index_actual>=28):
                     bol = False
-                    print('fin de prediccion de tiempo')                    
+                    print('fin de prediccion de tiempo')
+                    break                    
                 time.sleep(0.5)
                 #Mientras la diferencia de tiempo con la hora actual sea menor a un segundo y no se hallan enviado todos los datos predichos
                 while(diferencia_tiempo[index_actual].total_seconds()<=1 and index_actual<29):                   
@@ -207,7 +212,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     print('Insertado en: ',last_id)
                     print("Registro creado ")
                     #incrementa el id en uno correspondiente al dato insertado
-                    id_anterior +=1                    
+                    id_anterior = last_id                    
                     # Si no se graba, no guarda el cambio de la creacion, guarda con commit
                     mynewConnection.commit()
                     # Cierra la conexion
@@ -235,6 +240,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
     finally:
             print('fin de predicción')
             mynewConnection.close()
+            read_db()
            
 
 
@@ -248,7 +254,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         # genera la lectura de la base de datos de manera descendente para obtener los últimos valores
-        dataset = pd.read_sql("SELECT * FROM LoRaWAN_messages_calle_5 WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)       
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)       
         #Pasa los valores de posición a tipo flotante
         dataset['latitude'] = dataset['latitude'].astype('float64')
         dataset['longitude'] = dataset['longitude'].astype('float64')
@@ -262,8 +268,8 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #Reinicia el indice desde cero en adelante
         set_prediccion.reset_index(inplace=True, drop=True)
         #Se forma los datos de entrada al algoritmo de prediccion con las 4 características definidas
-        x_test = np.column_stack((set_prediccion.iloc[:, [4]], set_prediccion.iloc[:, [5]], set_prediccion.iloc[:, [8]],
-                                  set_prediccion.iloc[:, [12]]))    
+        x_test = np.column_stack((set_prediccion.iloc[:, [7]], set_prediccion.iloc[:, [8]], set_prediccion.iloc[:, [13]],
+                                  set_prediccion.iloc[:, [17]]))    
 
         try:
             #Carga el modelo entrenado y el escalador de los datos de entrada
@@ -344,7 +350,7 @@ def monitor(dataset2):
             weeks=0)
         # En s se guarda la diferencia de tiempo entre la hora actual y la hora del último registro
         # Se divide entre delta para que el resultado se exprese en numero de segundos.
-        s = abs(dataset2.iloc[0, 3] - hora_sistema) / delta
+        s = abs(dataset2.iloc[0, 4] - hora_sistema) / delta
         print(s)
 
         #  si llegó un nuevo dato
@@ -384,12 +390,12 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM LoRaWAN_messages_calle_5 WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1",myConnection)
+    dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1",myConnection)
     myConnection.close()    
     #Pasa los valores de posicion a tipo flotante
-    dataset['latitude']=dataset['latitude'].astype('float64')
+    """dataset['latitude']=dataset['latitude'].astype('float64')
     dataset['longitude']=dataset['longitude'].astype('float64')
-    dataset['id'] = dataset['id'].astype('float64')
+    dataset['id'] = dataset['id'].astype('float64')"""
     print('termina lectura base de datos')
     monitor(dataset)
 

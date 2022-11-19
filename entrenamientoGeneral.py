@@ -1,12 +1,17 @@
 
 #librerias necesarias
-from tokenize import Number
+#from tokenize import Number
 import numpy as np
 from numpy import *
 np.random.seed(4)
+import tensorflow as tf
+tf.random.set_seed(1)
 import matplotlib.pyplot as plt
 import pandas as pd
 from tensorflow import keras
+from keras.layers import Flatten
+from keras.optimizers import SGD, Adam
+
 
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
@@ -25,14 +30,14 @@ hostname = '82.180.175.58'
 username = 'u813407238_lora'
 password = 'Seguimiento_lora_123'
 database = 'u813407238_seguimiento'
-len_training = 200 #Longitud de entrenamiento
+len_training = 50 #Longitud de entrenamiento
 
 def ejecutar_entrenamiento(r,t,data):
     window = 30
     dataset = data
     import pandas as pd
-    iron = pd.read_csv('valor_final_inicio_entrenamiento.csv')
-    ir = iron.iloc[0,1]
+    #iron = pd.read_csv('valor_final_inicio_entrenamiento.csv')
+    #ir = iron.iloc[0,1]
     set_training = dataset[r:(r +len_training)]
     set_training.reset_index(inplace=True, drop=True)
     x= np.column_stack((set_training.iloc[:,[4]],set_training.iloc[:,[5]],set_training.iloc[:,[8]],set_training.iloc[:,[12]]))
@@ -60,16 +65,30 @@ def ejecutar_entrenamiento(r,t,data):
     dim_out = 4
     neurons = 200  
 
-    modelo = Sequential()
+    """modelo = Sequential()
     modelo.add(LSTM(units=neurons,  return_sequences=True, input_shape=dim_in))
     modelo.add(LSTM(200,  return_sequences=True))
-    modelo.add(LSTM(200,  return_sequences=True))
-    modelo.add(LSTM(200,  input_shape=dim_in))
+    modelo.add(LSTM(100,  return_sequences=True))
+    modelo.add(LSTM(100,  return_sequences=True))
+    modelo.add(Flatten())
     modelo.add(Dropout(0.2))
     modelo.add(Dense(units=dim_out))
     modelo.compile(optimizer='Adam', loss='mse')
-    modelo.fit(X_train,Y_train,epochs=100,batch_size=32)
-    print(modelo.summary())
+    modelo.fit(X_train,Y_train,epochs=100,batch_size=32)"""
+
+    modelo = Sequential()
+    modelo.add(LSTM(units=200, activation = 'relu',  return_sequences=True, input_shape=dim_in))
+    modelo.add(LSTM(200, activation = 'relu',return_sequences=True))
+    modelo.add(LSTM(50, activation = 'relu',return_sequences=True))
+    #modelo.add(LSTM(200, input_shape=dim_in))
+    modelo.add(Flatten())
+    modelo.add(Dropout(0.0))
+    opt = Adam(learning_rate=0.001)
+    modelo.add(Dense(units=dim_out ,activation = 'relu'))
+    modelo.compile(optimizer=opt, loss='mse', metrics = 'mse')
+    historia = modelo.fit(X_train,Y_train,epochs=500,batch_size=32)
+
+    #print(modelo.summary())
     modelo.save('model_LSTM.h5')
     import joblib
     joblib.dump(scaler, 'scaler.save')                
@@ -220,7 +239,7 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM LoRaWAN_messages_calle_5 WHERE dev_id = 'tarjeta2-cubecell' order by id",myConnection)
+    dataset= pd.read_sql("SELECT * FROM data_set WHERE dev_id = 'tarjeta1-cubecell' order by id",myConnection)
     print('longitud del dataset: ',len(dataset))
     dataset['latitude']=dataset['latitude'].astype('float64')
     dataset['longitude']=dataset['longitude'].astype('float64')
