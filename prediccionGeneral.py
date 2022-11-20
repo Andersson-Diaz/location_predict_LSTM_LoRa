@@ -29,7 +29,6 @@ def haversine(lat1, lon1, lat2, lon2):
     distance = 2 * R * math.asin(math.sqrt(a))
     return distance
 
-
 def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
     try:
         print('inicio de ejecucion de escenario 1')
@@ -43,9 +42,12 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
         dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
+        mynewConnection.close()
+
         #Convierte los datos de posicion en flotantes           
         if 0 in dataset.latitude.values or '' in dataset.latitude.values:
             print('no hay sufucientes valores para predecir')
+
         else:
             dataset['latitude'] = dataset['latitude'].astype('float64')
             dataset['longitude'] = dataset['longitude'].astype('float64')
@@ -167,8 +169,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 reference_hour = reference_hour + timedelta(seconds=prediction_time[i,0])                
             #Agrupa datos de latitud, longitud y hora
             prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction_hour))
-            print(prediction_time_hour)
-                      
+            print(prediction_time_hour)                      
             bol = True            
             #Mientras no llegue un nuevo dato o no se hayan enviado todos los datos predichos
             while(bol):                    
@@ -185,15 +186,17 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 print('índex actual: ',index_actual)
                 print('mínima diferencia: ',diferencia_tiempo[index_actual])                
                 # genera la lectura de la base de datos
+                time.sleep(1)
+                mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
                 dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)                
                 #Si llega un nuevo dato desde el dispositivo LoRa, salir de la predicción
                 print('id aNTERIOR: ', id_anterior)
                 print('id leído: ',dataset.iloc[0,0])
                 if (id_anterior!=dataset.iloc[0,0] or index_actual>=28):
                     bol = False
-                    print('fin de prediccion de tiempo')
+                    print('fin de prediccion de tiempo, llegó un nuevo dato 1')
                     break                    
-                time.sleep(0.5)
+                #time.sleep(1)
                 #Mientras la diferencia de tiempo con la hora actual sea menor a un segundo y no se hallan enviado todos los datos predichos
                 while(diferencia_tiempo[index_actual].total_seconds()<=1 and index_actual<29):                   
                     #Extrae latitud, longitud y hora predicha
@@ -207,6 +210,12 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     cur = mynewConnection.cursor()
                     cadena_SQL = "INSERT INTO Tabla_General (dev_id,predicted_latitude, predicted_longitude, predicted_hour, type_record) VALUES(%s,%s,%s,%s,%s)"
                     val = ('tarjeta2-cubecell',lat, lon, tim, 1)
+                    time.sleep(0.2)
+                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)
+                    if (id_anterior!=dataset.iloc[0,0] or index_actual>=28): 
+                        bol = False
+                        print('fin de prediccion de tiempo, llegó un nuevo dato 2')
+                        break  
                     cur.execute(cadena_SQL, val)
                     last_id = cur.lastrowid
                     print('Insertado en: ',last_id)
@@ -214,6 +223,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     #incrementa el id en uno correspondiente al dato insertado
                     id_anterior = last_id                    
                     # Si no se graba, no guarda el cambio de la creacion, guarda con commit
+                                        
                     mynewConnection.commit()
                     # Cierra la conexion
                     #mynewConnection.close()
@@ -230,7 +240,8 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
                     print('index actual 2: ',index_actual)                    
                     #espera dos segundos para evitar enviar el mismo dato
-                    time.sleep(2)
+                    time.sleep(1.8)
+
     except OSError:
             print('El modelo no ha sido entrenado aun Oserror')
             mynewConnection.close()            
@@ -239,7 +250,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             mynewConnection.close()           
     finally:
             print('fin de predicción')
-            mynewConnection.close()
+            #mynewConnection.close()
             read_db()
            
 

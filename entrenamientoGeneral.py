@@ -239,7 +239,7 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM data_set WHERE dev_id = 'tarjeta1-cubecell' order by id",myConnection)
+    dataset= pd.read_sql("SELECT * FROM data_set WHERE dev_id = 'tarjeta2-cubecell' order by id",myConnection)
     print('longitud del dataset: ',len(dataset))
     dataset['latitude']=dataset['latitude'].astype('float64')
     dataset['longitude']=dataset['longitude'].astype('float64')
