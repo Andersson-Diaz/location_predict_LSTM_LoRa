@@ -47,6 +47,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         #Convierte los datos de posicion en flotantes           
         if 0 in dataset.latitude.values or '' in dataset.latitude.values:
             print('no hay sufucientes valores para predecir')
+            mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database) 
 
         else:
             dataset['latitude'] = dataset['latitude'].astype('float64')
@@ -308,13 +309,15 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #desnormaliza la predicción
         prediction = scaler.inverse_transform(X_pred)
         print('Prediccion: ', prediction)
+        pred = pd.DataFrame(prediction[:, 0:3])
+        pred.to_csv('escenario_2_predict.csv')
         #guarda los valores predichos en un formato .csv
         calle_5_p = pd.DataFrame(prediction[:, 0:2])
         calle_5_p.to_csv('calle_5_con_lora_prediccion.csv')
         cur = mynewConnection.cursor()
         cadena_SQL = "UPDATE Tabla_General SET predicted_latitude = %s, predicted_longitude = %s, type_record = %s  WHERE id =%s"
-        pr = prediction[len(prediction), 0]
-        t = prediction[len(prediction), 1]
+        pr = prediction[len(prediction)-1, 0]
+        t = prediction[len(prediction)-1, 1]
         val = (pr, t, 2, ultimo_id)
         cur.execute(cadena_SQL, val)
         print("Registro creado en id = {}".format(ultimo_id))
