@@ -169,7 +169,10 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 reference_hour = reference_hour + timedelta(seconds=prediction_time[i,0])                
             #Agrupa datos de latitud, longitud y hora
             prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction_hour))
-            print(prediction_time_hour)                      
+            print(prediction_time_hour)  
+            pred = pd.DataFrame(prediction_time_hour[:, 0:3])
+            pred.to_csv('escenario_1_predict.csv')
+            #print('fin de prediccion de ubicacion')                    
             bol = True            
             #Mientras no llegue un nuevo dato o no se hayan enviado todos los datos predichos
             while(bol):                    
@@ -241,7 +244,6 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     print('index actual 2: ',index_actual)                    
                     #espera dos segundos para evitar enviar el mismo dato
                     time.sleep(1.8)
-
     except OSError:
             print('El modelo no ha sido entrenado aun Oserror')
             mynewConnection.close()            
@@ -250,7 +252,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             mynewConnection.close()           
     finally:
             print('fin de predicción')
-            #mynewConnection.close()
+            mynewConnection.close()
             read_db()
            
 
@@ -265,15 +267,18 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         # genera la lectura de la base de datos de manera descendente para obtener los últimos valores
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)       
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC", mynewConnection)       
         #Pasa los valores de posición a tipo flotante
+        
+        #Se define la ventana o la cantidad de datos usados para predecir el siguiente valor de posición
+        long_data=30+(dataset['latitude']=='0').sum()
+        dataset=dataset[0:long_data]
         dataset['latitude'] = dataset['latitude'].astype('float64')
         dataset['longitude'] = dataset['longitude'].astype('float64')
-        #Se define la ventana o la cantidad de datos usados para predecir el siguiente valor de posición
         window = 30
         # ordenamos de forma ascendente los valores obtenidos.       
         set_prediccion = pd.DataFrame()
-        for i in range(0, len(dataset)):
+        for i in range(0, long_data):
             set_prediccion = set_prediccion.append((dataset[(len(dataset) - i - 1):(len(dataset) - i)]))
             print(set_prediccion[i:0].values)        
         #Reinicia el indice desde cero en adelante
@@ -296,7 +301,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         x_test_normalized = scaler.transform(x_test)
         #predice la posición donde el valor es cero usando los valores de IMU enviados desde el dispositivo LoRa
         X_pred = x_test_normalized.copy()
-        for i in range(window, len(X_pred)):
+        for i in range(window, long_data):
             xin = (np.column_stack((X_pred[i - window:i, 0:2], x_test_normalized[i - window:i, 2:3],
                                     x_test_normalized[i - window:i, 3:4]))).reshape(1, window, 4)
             X_pred[i] = new_model.predict(xin)
@@ -308,8 +313,8 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         calle_5_p.to_csv('calle_5_con_lora_prediccion.csv')
         cur = mynewConnection.cursor()
         cadena_SQL = "UPDATE Tabla_General SET predicted_latitude = %s, predicted_longitude = %s, type_record = %s  WHERE id =%s"
-        pr = prediction[window, 0]
-        t = prediction[window, 1]
+        pr = prediction[len(prediction), 0]
+        t = prediction[len(prediction), 1]
         val = (pr, t, 2, ultimo_id)
         cur.execute(cadena_SQL, val)
         print("Registro creado en id = {}".format(ultimo_id))
@@ -327,6 +332,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
     finally:
             print('fin de predicción')
             mynewConnection.close()
+            read_db()
 
 def monitor(dataset2):
     #import MySQLdb
@@ -373,7 +379,7 @@ def monitor(dataset2):
             print('Guardar valor de id prediccion')
             #si el dato de posición que llegó es igual a cero, ejecutar prediccion escenario 2
             print('Valor medido de id', dataset2.iloc[0, 0])
-            if dataset2.iloc[0, 4] == 0:
+            if dataset2.iloc[0, 7] == '0':
                 print('Dato nuevo es igual a cero')
                 #se pasa como parámetro, el índice del nuevo dato igual a cero
                 ejecutar_prediccion_escenario2(ultimo_id)

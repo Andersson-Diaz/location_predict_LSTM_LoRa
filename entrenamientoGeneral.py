@@ -5,7 +5,7 @@ import numpy as np
 from numpy import *
 np.random.seed(4)
 import tensorflow as tf
-tf.random.set_seed(1)
+tf.random.set_seed(100)
 import matplotlib.pyplot as plt
 import pandas as pd
 from tensorflow import keras
@@ -30,7 +30,8 @@ hostname = '82.180.175.58'
 username = 'u813407238_lora'
 password = 'Seguimiento_lora_123'
 database = 'u813407238_seguimiento'
-len_training = 50 #Longitud de entrenamiento
+#Longitud de entrenamiento
+len_training = 50 
 
 def ejecutar_entrenamiento(r,t,data):
     window = 30
