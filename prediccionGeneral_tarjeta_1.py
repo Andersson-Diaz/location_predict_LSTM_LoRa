@@ -41,7 +41,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta1-cubecell' order by id DESC LIMIT 31", mynewConnection)
         mynewConnection.close()
 
         #Convierte los datos de posicion en flotantes           
@@ -52,6 +52,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         else:
             dataset['latitude'] = dataset['latitude'].astype('float64')
             dataset['longitude'] = dataset['longitude'].astype('float64')
+
             #Ordena los datos de forma ascendente
             set_prediccion = pd.DataFrame()
             for i in range(0, len(dataset)):
@@ -169,7 +170,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 prediction_hour.append(reference_hour + timedelta(seconds=prediction_time[i,0]))
                 reference_hour = reference_hour + timedelta(seconds=prediction_time[i,0])                
             #Agrupa datos de latitud, longitud y hora
-            prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction_hour))
+            prediction_time_hour = np.column_stack((prediction[window:,0:1], prediction[window:,1:2],prediction[window:,2:3],prediction[window:,3:4],prediction_hour))
             print(prediction_time_hour)  
             pred = pd.DataFrame(prediction_time_hour[:, 0:3])
             pred.to_csv('escenario_1_predict.csv')
@@ -184,7 +185,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 print('hora del sistema: ',hora_sistema)                
                 diferencia_tiempo = []
                 for i in range(0,len(prediction_hour)):
-                    diferencia_tiempo.append(abs(prediction_time_hour[i,2]-hora_sistema))
+                    diferencia_tiempo.append(abs(prediction_time_hour[i,4]-hora_sistema))
                 #devuelve el índice de la posición mas cercana a la hora actual
                 index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
                 print('índex actual: ',index_actual)
@@ -192,7 +193,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 # genera la lectura de la base de datos
                 time.sleep(1)
                 mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)                
+                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta1-cubecell' order by id DESC LIMIT 1", mynewConnection)                
                 #Si llega un nuevo dato desde el dispositivo LoRa, salir de la predicción
                 print('id aNTERIOR: ', id_anterior)
                 print('id leído: ',dataset.iloc[0,0])
@@ -206,16 +207,18 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     #Extrae latitud, longitud y hora predicha
                     lat = prediction_time_hour[index_actual,0]
                     lon = prediction_time_hour[index_actual,1]
-                    hour = prediction_time_hour[index_actual,2]                    
+                    acc= prediction_time_hour[index_actual,2]
+                    giro = prediction_time_hour[index_actual,3]
+                    hour = prediction_time_hour[index_actual,4]                    
                     import datetime
                     #Pasa la hora de un tipo timedelta a un tipo datetime
                     tim = datetime.timedelta(seconds=hour.total_seconds())                    
                     #Inserta en las base de datos el valor predicho correspondiente a la hora actual
                     cur = mynewConnection.cursor()
-                    cadena_SQL = "INSERT INTO Tabla_General (dev_id,predicted_latitude, predicted_longitude, predicted_hour, type_record) VALUES(%s,%s,%s,%s,%s)"
-                    val = ('tarjeta2-cubecell',lat, lon, tim, 1)
+                    cadena_SQL = "INSERT INTO Tabla_General (dev_id, hour, latitude, longitude, predicted_latitude, predicted_longitude, predicted_hour, type_record,accy,gyroz) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                    val = ('tarjeta1-cubecell',tim, lat, lon, lat, lon, tim, 1, acc, giro)
                     time.sleep(0.2)
-                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)
+                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta1-cubecell' order by id DESC LIMIT 1", mynewConnection)
                     if (id_anterior!=dataset.iloc[0,0] or index_actual>=28): 
                         bol = False
                         print('fin de prediccion de tiempo, llegó un nuevo dato 2')
@@ -240,7 +243,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second, microseconds=hora_sistema.microsecond)                    
                     diferencia_tiempo = []
                     for i in range(0,len(asd)):
-                        diferencia_tiempo.append(abs(asd[i,2]-hora_sistema))
+                        diferencia_tiempo.append(abs(asd[i,4]-hora_sistema))
                     index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
                     print('index actual 2: ',index_actual)                    
                     #espera dos segundos para evitar enviar el mismo dato
@@ -268,7 +271,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         # genera la lectura de la base de datos de manera descendente para obtener los últimos valores
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC", mynewConnection)       
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta1-cubecell' order by id DESC", mynewConnection)       
         #Pasa los valores de posición a tipo flotante
         
         #Se define la ventana o la cantidad de datos usados para predecir el siguiente valor de posición
@@ -410,7 +413,7 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1",myConnection)
+    dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta1-cubecell' order by id DESC LIMIT 1",myConnection)
     myConnection.close()    
     #Pasa los valores de posicion a tipo flotante
     """dataset['latitude']=dataset['latitude'].astype('float64')
