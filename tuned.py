@@ -10,6 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from keras.layers import Dropout
+from keras.layers import Bidirectional
 #import tensorflow as tf
 #print('Version de tensorflow ',tf.__version__)
 #from keras.utils import to_categorical
@@ -70,9 +71,9 @@ dim_in = (X_train.shape[1],4)
 dim_out = 4
 neurons = 100
 modelo = Sequential()
-modelo.add(LSTM(units=200, activation = 'relu',  return_sequences=True, input_shape=dim_in))
-modelo.add(LSTM(200, activation = 'relu',return_sequences=True))
-modelo.add(LSTM(50, activation = 'relu',return_sequences=True))
+modelo.add(Bidirectional(LSTM(units=200, activation = 'relu',  return_sequences=True, input_shape=dim_in)))
+modelo.add(Bidirectional(LSTM(200, activation = 'relu',return_sequences=True)))
+modelo.add(Bidirectional(LSTM(50, activation = 'relu',return_sequences=True)))
 #modelo.add(LSTM(200, input_shape=dim_in))
 modelo.add(Flatten())
 modelo.add(Dropout(0.0))
