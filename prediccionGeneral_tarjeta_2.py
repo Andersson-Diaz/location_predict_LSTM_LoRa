@@ -8,11 +8,18 @@ tf.random.set_seed(1)
 from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 import time
+inicio = time.time()
 from datetime import timedelta
 import math
 import MySQLdb
 import datetime
 import pandas as pd
+#globales
+column_hour = 4
+column_lat =7
+column_lon = 8
+column_acc = 13
+column_gyro = 17
 # datos para la conexion a la base de datos
 hostname = '82.180.175.58'
 username = 'u813407238_lora'
@@ -65,16 +72,16 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             # Obtiene el valor de los indices de manera ascendente
             set_prediccion.reset_index(inplace=True, drop=True)
             #Define las características a ser ingresadas a la entrada del algoritmo de predicción
-            x_test = np.column_stack((set_prediccion.iloc[1:len(set_prediccion), [7]],
-                                    set_prediccion.iloc[1:len(set_prediccion), [8]],
-                                    set_prediccion.iloc[1:len(set_prediccion), [13]],
-                                    set_prediccion.iloc[1:len(set_prediccion), [17]]))
+            x_test = np.column_stack((set_prediccion.iloc[1:len(set_prediccion), [column_lat]],
+                                    set_prediccion.iloc[1:len(set_prediccion), [column_lon]],
+                                    set_prediccion.iloc[1:len(set_prediccion), [column_acc]],
+                                    set_prediccion.iloc[1:len(set_prediccion), [column_gyro]]))
 
             try:
                 import joblib
-                scaler = joblib.load('scaler.save')
+                scaler = joblib.load('scaler_tarjeta2.save')
                 #new_model = keras.models.load_model('model_bidirectional.h5')
-                new_model = keras.models.load_model('model_LSTM.h5')
+                new_model = keras.models.load_model('model_LSTM_tarjeta2.h5')
             except OSError:
                 print('No existe modelo entrenado')
                 read_db()
@@ -129,15 +136,15 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             distance_validation = []            
             for i in range(0, len(set_prediccion) - 1):
                 distance_validation.append(
-                    haversine(set_prediccion.iat[i + 1, 7], set_prediccion.iat[i + 1, 8], set_prediccion.iat[i, 7],
-                            set_prediccion.iat[i, 8]))
+                    haversine(set_prediccion.iat[i + 1, column_lat], set_prediccion.iat[i + 1, column_lon], set_prediccion.iat[i, column_lat],
+                            set_prediccion.iat[i, column_lon]))
             # agrupa la duracion y la distancia para cada punto de ubicación
             n_v = np.column_stack((validation_last, distance_validation))
             #Carga el modelo entrenado y el escalador
             try:
                 import joblib
-                sc = joblib.load('scaler_tiempo.save')
-                model_last = keras.models.load_model('tiempo_entrenado.h5')
+                sc = joblib.load('scaler_tiempo_tarjeta2.save')
+                model_last = keras.models.load_model('tiempo_entrenado_tarjeta2.h5')
             except:
                 print('El modelo no ha sido entrenado aún')
                 read_db()
@@ -243,7 +250,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     hora_sistema = timedelta(hours=hora_sistema.hour, minutes=hora_sistema.minute, seconds=hora_sistema.second, microseconds=hora_sistema.microsecond)                    
                     diferencia_tiempo = []
                     for i in range(0,len(asd)):
-                        diferencia_tiempo.append(abs(asd[i,4]-hora_sistema))
+                        diferencia_tiempo.append(abs(asd[i,column_hour]-hora_sistema))
                     index_actual = diferencia_tiempo.index(min(diferencia_tiempo))
                     print('index actual 2: ',index_actual)                    
                     #espera dos segundos para evitar enviar el mismo dato
@@ -288,14 +295,14 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #Reinicia el indice desde cero en adelante
         set_prediccion.reset_index(inplace=True, drop=True)
         #Se forma los datos de entrada al algoritmo de prediccion con las 4 características definidas
-        x_test = np.column_stack((set_prediccion.iloc[:, [7]], set_prediccion.iloc[:, [8]], set_prediccion.iloc[:, [13]],
-                                  set_prediccion.iloc[:, [17]]))    
+        x_test = np.column_stack((set_prediccion.iloc[:, [column_lat]], set_prediccion.iloc[:, [column_lon]], set_prediccion.iloc[:, [column_acc]],
+                                  set_prediccion.iloc[:, [column_gyro]]))    
 
         try:
             #Carga el modelo entrenado y el escalador de los datos de entrada
             import joblib
-            scaler = joblib.load('scaler.save')
-            new_model = keras.models.load_model('model_LSTM.h5')
+            scaler = joblib.load('scaler_tarjeta2.save')
+            new_model = keras.models.load_model('model_LSTM_tarjeta2.h5')
             # new_model = keras.models.load_model('model_bidirectional.h5')
         except OSError:
             #captura la excepcion cuando el archivo del modelo no existe en el disco
@@ -337,6 +344,8 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
             mynewConnection.close()           
     finally:
             print('fin de predicción')
+            fin = time.time()
+            print('tiempo de ejecucion ',fin-inicio)
             mynewConnection.close()
             read_db()
 
@@ -348,7 +357,7 @@ def monitor(dataset2):
     print('Comienza funcion monitor')    
     # inicialmente hace la conexion con la base de datos    
     #si el ultimo dato en la tabla no es un dato predicho en el escenario 1 o un dato nulo
-    if (dataset2.iloc[0,7]!= ''):
+    if (dataset2.iloc[0,column_lat]!= ''):
         #Lee el índice del último dato del dataset
         ultimo_id = dataset2.iloc[0, 0]
         #Lee el índice donde terminó la anterior prediccion.
@@ -373,10 +382,12 @@ def monitor(dataset2):
             weeks=0)
         # En s se guarda la diferencia de tiempo entre la hora actual y la hora del último registro
         # Se divide entre delta para que el resultado se exprese en numero de segundos.
-        s = abs(dataset2.iloc[0, 4] - hora_sistema) / delta
+        s = abs(dataset2.iloc[0, column_hour] - hora_sistema) / delta
         print(s)
 
         #  si llegó un nuevo dato
+        print(ultimo_id)
+        print(id_guardado)
         if ultimo_id != id_guardado:            
             #Se crea un Dataframe para guardar el valor del índice del último dato evaluado
             df = pd.DataFrame()
@@ -385,7 +396,7 @@ def monitor(dataset2):
             print('Guardar valor de id prediccion')
             #si el dato de posición que llegó es igual a cero, ejecutar prediccion escenario 2
             print('Valor medido de id', dataset2.iloc[0, 0])
-            if dataset2.iloc[0, 7] == '0':
+            if dataset2.iloc[0, column_lat] == '0':
                 print('Dato nuevo es igual a cero')
                 #se pasa como parámetro, el índice del nuevo dato igual a cero
                 ejecutar_prediccion_escenario2(ultimo_id)
