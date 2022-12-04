@@ -399,7 +399,6 @@ def read_db():
     dataset['latitude']=dataset['latitude'].astype('float64')
     dataset['longitude']=dataset['longitude'].astype('float64')
     print('termina lectura base de datos')
-
     monitor(dataset)
 
 read_db()
