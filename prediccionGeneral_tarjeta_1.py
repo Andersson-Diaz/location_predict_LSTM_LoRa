@@ -4,7 +4,7 @@ import numpy as np
 from numpy import *
 np.random.seed(4)
 import tensorflow as tf
-tf.random.set_seed(1)
+#tf.random.set_seed(1)
 from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 import time
@@ -324,6 +324,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #guarda los valores predichos en un formato .csv
         calle_5_p = pd.DataFrame(prediction[:, 0:2])
         calle_5_p.to_csv('calle_5_con_lora_prediccion.csv')
+        ultimo_id = 96
         cur = mynewConnection.cursor()
         cadena_SQL = "UPDATE Tabla_General SET predicted_latitude = %s, predicted_longitude = %s, type_record = %s  WHERE id =%s"
         pr = prediction[len(prediction)-1, 0]

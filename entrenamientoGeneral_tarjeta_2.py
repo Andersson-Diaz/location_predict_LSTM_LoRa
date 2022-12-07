@@ -153,7 +153,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
-                      epochs=100,batch_size=32,
+                      epochs=200,batch_size=16,
                       validation_data=(X_test, Y_test))
     
     #print(modelo.summary())
@@ -262,19 +262,20 @@ def ejecutar_entrenamiento(r,t,data):
     #Cear un contenedor usando el módulo Sequential:
     def build_model_time(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         #hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)
         hp_neurons = hp.Int('neurons1', min_value = 10, max_value = 200, step = 10)
         hp_neurons2 = hp.Int('neurons2', min_value = 10, max_value = 200, step = 10)
-        hp_neurons3 = hp.Int('neurons3', min_value = 10, max_value = 200, step = 10)
+        #hp_neurons3 = hp.Int('neurons3', min_value = 10, max_value = 200, step = 10)
         #tf.random.set_seed(hp_seed)
         #definición del modelo de red neuronal
         model_time = Sequential()
         model_time.add(LSTM(units=hp_neurons, activation=hp_activation, return_sequences=True, input_shape=dim_time_in))
         model_time.add(LSTM(hp_neurons2, activation=hp_activation, return_sequences=True))
-        model_time.add(LSTM(hp_neurons3, activation=hp_activation, return_sequences=True))
+        #model_time.add(LSTM(hp_neurons3, activation=hp_activation, return_sequences=True))
         #model_time.add(LSTM(200, activation=hp_activation,  return_sequences=True))
         model_time.add(Flatten())
         model_time.add(Dropout(recurrent_dropout))
@@ -304,7 +305,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,
-                      epochs=200,batch_size=32,
+                      epochs=100,batch_size=16,
                       validation_data=(X_test_time, Y_test_time))
 
     """model_time = Sequential()

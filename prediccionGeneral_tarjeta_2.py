@@ -4,7 +4,7 @@ import numpy as np
 from numpy import *
 np.random.seed(4)
 import tensorflow as tf
-tf.random.set_seed(1)
+#tf.random.set_seed(1)
 from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 import time
@@ -313,8 +313,9 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #predice la posición donde el valor es cero usando los valores de IMU enviados desde el dispositivo LoRa
         X_pred = x_test_normalized.copy()
         for i in range(window, long_data):
-            xin = (np.column_stack((X_pred[i - window:i, 0:2], x_test_normalized[i - window:i, 2:3],
-                                    x_test_normalized[i - window:i, 3:4]))).reshape(1, window, 4)
+            #xin = X_pred[i - window:i].reshape(1, window, 4)
+            xin = (np.column_stack((X_pred[i - window:i, 0:2], X_pred[i - window:i, 2:3],
+                                    X_pred[i - window:i, 3:4]))).reshape(1, window, 4)
             X_pred[i] = new_model.predict(xin)
         #desnormaliza la predicción
         prediction = scaler.inverse_transform(X_pred)
