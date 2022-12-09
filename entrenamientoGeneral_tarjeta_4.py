@@ -27,7 +27,11 @@ from datetime import timedelta
 import math
 import MySQLdb
 import pandas as pd
-
+column_hour = 3
+column_lat =4
+column_lon = 5
+column_acc = 8
+column_gyro = 12
 #datos para la conexion a la base de datos
 hostname = '82.180.175.58'
 username = 'u813407238_lora'
@@ -53,7 +57,7 @@ def ejecutar_entrenamiento(r,t,data):
     set_training.reset_index(inplace=True, drop=True)
     set_validation.reset_index(inplace=True, drop=True)
 
-    x= np.column_stack((set_training.iloc[:,[4]],set_training.iloc[:,[5]],set_training.iloc[:,[8]],set_training.iloc[:,[12]]))
+    x= np.column_stack((set_training.iloc[:,[column_lat]],set_training.iloc[:,[column_lon]],set_training.iloc[:,[column_acc]],set_training.iloc[:,[column_gyro]]))
     # Normalización del set de entrenamiento
     scaler = MinMaxScaler(feature_range=(0,1))
     set_training_escaled = scaler.fit_transform(x)
@@ -76,7 +80,7 @@ def ejecutar_entrenamiento(r,t,data):
     #así como el número total de neurons (100):
     dim_in = (X_train.shape[1],4)
     dim_out = 4
-    neurons = 200  
+    #neurons = 200  
 
     """modelo = Sequential()
     modelo.add(LSTM(units=neurons,  return_sequences=True, input_shape=dim_in))
@@ -94,7 +98,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)
@@ -128,7 +132,7 @@ def ejecutar_entrenamiento(r,t,data):
     overwrite=True,
     max_trials = 6)
 
-    x_test= np.column_stack((set_validation.iloc[:,[4]],set_validation.iloc[:,[5]],set_validation.iloc[:,[8]],set_validation.iloc[:,[12]]))
+    x_test= np.column_stack((set_validation.iloc[:,[column_lat]],set_validation.iloc[:,[column_lon]],set_validation.iloc[:,[column_acc]],set_validation.iloc[:,[column_gyro]]))
 
     x_test_n = scaler.transform(x_test)
 
@@ -153,7 +157,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
-                      epochs=200,batch_size=32,
+                      epochs=200,batch_size=16,
                       validation_data=(X_test, Y_test))
     
     #print(modelo.summary())
@@ -177,11 +181,11 @@ def ejecutar_entrenamiento(r,t,data):
     #Crea una lista con la distancia entre un punto de ubicacion y el punto anterior desde el set de entrenamiento
     training_distance = []   
     for i in range(0, len(set_training)-1):
-        training_distance.append(haversine(set_training.iat[i,4],set_training.iat[i,5],set_training.iat[i+1,4],set_training.iat[i+1,5]))
+        training_distance.append(haversine(set_training.iat[i,column_lat],set_training.iat[i,column_lon],set_training.iat[i+1,column_lat],set_training.iat[i+1,column_lon]))
     
     validation_distance = []
     for i in range(0, len(set_validation)-1):
-        validation_distance.append(haversine(set_validation.iat[i,4],set_validation.iat[i,5],set_validation.iat[i+1,4],set_validation.iat[i+1,5]))
+        validation_distance.append(haversine(set_validation.iat[i,column_lat],set_validation.iat[i,column_lon],set_validation.iat[i+1,column_lat],set_validation.iat[i+1,column_lon]))
     
     #toma la hora del conjunto de datos de entrenamiento
     training_time = set_training['hour']
@@ -262,7 +266,7 @@ def ejecutar_entrenamiento(r,t,data):
     #Cear un contenedor usando el módulo Sequential:
     def build_model_time(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         #hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)
@@ -292,7 +296,7 @@ def ejecutar_entrenamiento(r,t,data):
     build_model_time,
     objective = 'mse',
     overwrite=True,
-    max_trials = 6)
+    max_trials = 4)
 
     tuner.search(X_train_time, Y_train_time,
              epochs=100,
@@ -304,7 +308,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,
-                      epochs=200,batch_size=32,
+                      epochs=200,batch_size=16,
                       validation_data=(X_test_time, Y_test_time))
 
     """model_time = Sequential()
@@ -354,7 +358,7 @@ def monitor(dataset):
         print('Nuevo valor de inicio ?: ', starTraining)
         inicio = starTraining
         #Mientras los valores de posición sean válidos para entrenamiento
-        while(dataset.iloc[starTraining,[4]].values!=0 and dataset.iloc[starTraining,[4]].values!= ''):
+        while(dataset.iloc[starTraining,[column_lat]].values!=0 and dataset.iloc[starTraining,[column_lat]].values!= ''):
                 starTraining +=1 # starTraining+1
                 count +=1 # count+1
                 print('entra al while',count)

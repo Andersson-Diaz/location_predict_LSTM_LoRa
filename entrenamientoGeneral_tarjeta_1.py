@@ -94,7 +94,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)
@@ -143,7 +143,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     X_test = np.reshape(X_test, (X_test.shape[0],X_test.shape[1],4))
 
-    """tuner.search(X_train, Y_train,
+    tuner.search(X_train, Y_train,
              epochs=100,
              #overwrite=True,
              validation_data=(X_test, Y_test))
@@ -153,8 +153,8 @@ def ejecutar_entrenamiento(r,t,data):
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
-                      epochs=200,batch_size=32,
-                      validation_data=(X_test, Y_test))"""
+                      epochs=200,batch_size=16,
+                      validation_data=(X_test, Y_test))
     
     #print(modelo.summary())
     modelo.save('model_LSTM_tarjeta1.h5')
@@ -262,7 +262,7 @@ def ejecutar_entrenamiento(r,t,data):
     #Cear un contenedor usando el módulo Sequential:
     def build_model_time(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         #hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)
@@ -292,9 +292,9 @@ def ejecutar_entrenamiento(r,t,data):
     build_model_time,
     objective = 'mse',
     overwrite=True,
-    max_trials = 6)
+    max_trials = 4)
 
-    """tuner.search(X_train_time, Y_train_time,
+    tuner.search(X_train_time, Y_train_time,
              epochs=100,
              #overwrite=True,
              validation_data=(X_test_time, Y_test_time))
@@ -304,10 +304,10 @@ def ejecutar_entrenamiento(r,t,data):
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,
-                      epochs=200,batch_size=32,
-                      validation_data=(X_test_time, Y_test_time))"""
+                      epochs=200,batch_size=16,
+                      validation_data=(X_test_time, Y_test_time))
 
-    model_time = Sequential()
+    """  model_time = Sequential()
     #añadimos el modelo
     model_time.add(LSTM(units=neurons_time, return_sequences=True, input_shape=dim_time_in))
     #agregamos una capa lSTM
@@ -320,7 +320,7 @@ def ejecutar_entrenamiento(r,t,data):
     model_time.compile(optimizer='rmsprop', loss='mse')
     #implementamos el modelo con 20 iteraciones, epochs
     #Presentando a la res lstm lotes de 32 datos
-    model_time.fit(X_train_time,Y_train_time,epochs=100,batch_size=32)
+    model_time.fit(X_train_time,Y_train_time,epochs=100,batch_size=32)"""
     #Guardamos el modelo
     model_time.save('tiempo_entrenado_tarjeta1.h5')
     import joblib

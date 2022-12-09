@@ -94,7 +94,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
-        hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
+        #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
         hp_seed = hp.Int('seed', min_value =0, max_value = 100, step = 1)
         hp_activation = hp.Choice('activation',['relu','tanh','linear','selu','elu','softmax'])
         recurrent_dropout = hp.Float('recurrent_dropout',min_value=0.0,max_value=0.99,default=0.2)

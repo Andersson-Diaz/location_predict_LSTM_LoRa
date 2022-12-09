@@ -153,7 +153,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
-                      epochs=200,batch_size=32,
+                      epochs=200,batch_size=16,
                       validation_data=(X_test, Y_test))
     
     #print(modelo.summary())
@@ -292,7 +292,7 @@ def ejecutar_entrenamiento(r,t,data):
     build_model_time,
     objective = 'mse',
     overwrite=True,
-    max_trials = 6)
+    max_trials = 4)
 
     tuner.search(X_train_time, Y_train_time,
              epochs=100,
@@ -304,7 +304,7 @@ def ejecutar_entrenamiento(r,t,data):
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,
-                      epochs=200,batch_size=32,
+                      epochs=200,batch_size=16,
                       validation_data=(X_test_time, Y_test_time))
 
     """model_time = Sequential()

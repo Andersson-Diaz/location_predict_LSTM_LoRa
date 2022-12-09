@@ -48,7 +48,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-cubecell' order by id DESC LIMIT 31", mynewConnection)
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' order by id DESC LIMIT 31", mynewConnection)
         mynewConnection.close()
 
         #Convierte los datos de posicion en flotantes           
@@ -200,7 +200,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 # genera la lectura de la base de datos
                 time.sleep(1)
                 mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta4-cubecell' order by id DESC LIMIT 1", mynewConnection)                
+                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' order by id DESC LIMIT 1", mynewConnection)                
                 #Si llega un nuevo dato desde el dispositivo LoRa, salir de la predicción
                 print('id aNTERIOR: ', id_anterior)
                 print('id leído: ',dataset.iloc[0,0])
@@ -223,9 +223,9 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     #Inserta en las base de datos el valor predicho correspondiente a la hora actual
                     cur = mynewConnection.cursor()
                     cadena_SQL = "INSERT INTO Tabla_General (dev_id, hour, latitude, longitude, predicted_latitude, predicted_longitude, predicted_hour, type_record,accy,gyroz) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-                    val = ('tarjeta4-cubecell',tim, lat, lon, lat, lon, tim, 1, acc, giro)
+                    val = ('tarjeta4-esp32lora',tim, lat, lon, lat, lon, tim, 1, acc, giro)
                     time.sleep(0.2)
-                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta4-cubecell' order by id DESC LIMIT 1", mynewConnection)
+                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' order by id DESC LIMIT 1", mynewConnection)
                     if (id_anterior!=dataset.iloc[0,0] or index_actual>=28): 
                         bol = False
                         print('fin de prediccion de tiempo, llegó un nuevo dato 2')
@@ -278,7 +278,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         # genera la lectura de la base de datos de manera descendente para obtener los últimos valores
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-cubecell' order by id DESC", mynewConnection)       
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' order by id DESC", mynewConnection)       
         #Pasa los valores de posición a tipo flotante
         
         #Se define la ventana o la cantidad de datos usados para predecir el siguiente valor de posición
