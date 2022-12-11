@@ -1,0 +1,1 @@
+{'activation': 'tanh', 'recurrent_dropout': 0.05306058860834808, 'neurons1': 110, 'neurons2': 180, 'neurons3': 20, 'learning_rate': 0.01}

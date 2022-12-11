@@ -150,6 +150,9 @@ def ejecutar_entrenamiento(r,t,data):
 
     best_hps = tuner.get_best_hyperparameters(num_trials = 1)[0]
     print(best_hps.values)
+    f = open ('best_values_tarjeta5_location.txt','w')
+    f.write(str(best_hps.values))
+    f.close()
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
@@ -301,6 +304,9 @@ def ejecutar_entrenamiento(r,t,data):
     
     best_hps = tuner.get_best_hyperparameters(num_trials = 1)[0]
     print(best_hps.values)
+    f = open ('best_values_tarjeta5_time.txt','w')
+    f.write(str(best_hps.values))
+    f.close()
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,
@@ -392,7 +398,7 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM data_set WHERE dev_id = 'tarjeta5-cubecell' order by id",myConnection)
+    dataset= pd.read_sql("SELECT * FROM data_set_training WHERE dev_id = 'tarjeta5-cubecell' order by id",myConnection)
     dataset.reset_index(inplace=True, drop=True)
     #lentrain = len(dataset)
     print('longitud del dataset: ',len(dataset))

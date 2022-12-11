@@ -1,0 +1,1 @@
+{'seed': 100, 'activation': 'relu', 'recurrent_dropout': 0.0, 'neurons1': 70, 'neurons2': 160, 'neurons3': 70, 'learning_rate': 0.001}

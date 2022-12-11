@@ -78,7 +78,7 @@ def ejecutar_entrenamiento(r,t,data):
     dim_out = 4
     neurons = 200  
 
-    modelo = Sequential()
+    """modelo = Sequential()
     modelo.add(LSTM(units=neurons,  return_sequences=True, input_shape=dim_in))
     modelo.add(LSTM(200,  return_sequences=True))
     modelo.add(LSTM(100,  return_sequences=True))
@@ -87,7 +87,7 @@ def ejecutar_entrenamiento(r,t,data):
     modelo.add(Dropout(0.2))
     modelo.add(Dense(units=dim_out))
     modelo.compile(optimizer='Adam', loss='mse')
-    modelo.fit(X_train,Y_train,epochs=200,batch_size=32)
+    modelo.fit(X_train,Y_train,epochs=200,batch_size=32)"""
     from keras.layers import Bidirectional
     
     from tensorflow.keras.optimizers import SGD, Adam
@@ -150,6 +150,9 @@ def ejecutar_entrenamiento(r,t,data):
 
     best_hps = tuner.get_best_hyperparameters(num_trials = 1)[0]
     print(best_hps.values)
+    f = open ('best_values_tarjeta1_location.txt','w')
+    f.write(str(best_hps.values))
+    f.close()
 
     modelo = tuner.hypermodel.build(best_hps)
     modelo.fit(X_train, Y_train,
@@ -292,7 +295,7 @@ def ejecutar_entrenamiento(r,t,data):
     build_model_time,
     objective = 'mse',
     overwrite=True,
-    max_trials = 4)
+    max_trials = 6)
 
     tuner.search(X_train_time, Y_train_time,
              epochs=100,
@@ -301,6 +304,9 @@ def ejecutar_entrenamiento(r,t,data):
     
     best_hps = tuner.get_best_hyperparameters(num_trials = 1)[0]
     print(best_hps.values)
+    f = open ('best_values_tarjeta1_time.txt','w')
+    f.write(str(best_hps.values))
+    f.close()
 
     model_time = tuner.hypermodel.build(best_hps)
     model_time.fit(X_train_time, Y_train_time,

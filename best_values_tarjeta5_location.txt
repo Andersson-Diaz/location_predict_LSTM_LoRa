@@ -1,0 +1,1 @@
+{'batch_size': 16, 'seed': 72, 'activation': 'selu', 'recurrent_dropout': 0.023212604482484144, 'neurons1': 190, 'neurons2': 110, 'neurons3': 20, 'learning_rate': 0.001}

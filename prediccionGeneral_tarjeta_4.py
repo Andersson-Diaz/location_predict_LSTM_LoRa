@@ -361,7 +361,7 @@ def monitor(dataset2):
         #Lee el índice del último dato del dataset
         ultimo_id = dataset2.iloc[0, 0]
         #Lee el índice donde terminó la anterior prediccion.
-        iron = pd.read_csv('id_prediccion.csv')
+        iron = pd.read_csv('id_prediccion_tarjeta4.csv')
         id_guardado = iron.iloc[0, 1]
 
         # guarda la diferencia de tiempo en segundos desde la hora actual hasta la hora del ultimo registro recibido.
@@ -392,7 +392,7 @@ def monitor(dataset2):
             #Se crea un Dataframe para guardar el valor del índice del último dato evaluado
             df = pd.DataFrame()
             df['valor'] = [dataset2.iloc[0, 0]]
-            df.to_csv('id_prediccion.csv')
+            df.to_csv('id_prediccion_tarjeta4.csv')
             print('Guardar valor de id prediccion')
             #si el dato de posición que llegó es igual a cero, ejecutar prediccion escenario 2
             print('Valor medido de id', dataset2.iloc[0, 0])
