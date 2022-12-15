@@ -27,3 +27,12 @@ mse_lon = mean_squared_error(tarjeta4['longitude'],tarjeta4['predicted_longitude
 print('Error en longitud: ',mse_lon)
 
 print('Error medio en tarjeta 4: ' ,haversine(0,0,mse_lat,mse_lon)*1000, 'metros')
+
+tarjeta5 = pd.read_csv('tarjeta5_Spark.csv')
+mse_lat = mean_squared_error(tarjeta5['latitude'],tarjeta5['predicted_latitude'], squared=False)
+print('Error en latitud: ',mse_lat)
+
+mse_lon = mean_squared_error(tarjeta5['longitude'],tarjeta5['predicted_longitude'], squared=False)
+print('Error en longitud: ',mse_lon)
+
+print('Error medio en tarjeta 5: ' ,haversine(0,0,mse_lat,mse_lon)*1000, 'metros')
