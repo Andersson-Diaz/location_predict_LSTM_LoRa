@@ -4,7 +4,7 @@ import numpy as np
 from numpy import *
 np.random.seed(4)
 import tensorflow as tf
-tf.random.set_seed(1)
+#tf.random.set_seed(1)
 from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 import time
@@ -48,7 +48,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta5-cubecell' order by id DESC LIMIT 31", mynewConnection)
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
         mynewConnection.close()
 
         #Convierte los datos de posicion en flotantes           
@@ -79,9 +79,9 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
 
             try:
                 import joblib
-                scaler = joblib.load('scaler_tarjeta5.save')
+                scaler = joblib.load('scaler_tarjeta4.save')
                 #new_model = keras.models.load_model('model_bidirectional.h5')
-                new_model = keras.models.load_model('model_LSTM_tarjeta5.h5')
+                new_model = keras.models.load_model('model_LSTM_tarjeta4.h5')
             except OSError:
                 print('No existe modelo entrenado')
                 read_db()
@@ -143,8 +143,8 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             #Carga el modelo entrenado y el escalador
             try:
                 import joblib
-                sc = joblib.load('scaler_tiempo_tarjeta5.save')
-                model_last = keras.models.load_model('tiempo_entrenado_tarjeta5.h5')
+                sc = joblib.load('scaler_tiempo_tarjeta4.save')
+                model_last = keras.models.load_model('tiempo_entrenado_tarjeta4.h5')
             except:
                 print('El modelo no ha sido entrenado aún')
                 read_db()
@@ -200,7 +200,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 # genera la lectura de la base de datos
                 time.sleep(1)
                 mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
-                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta5-cubecell' order by id DESC LIMIT 1", mynewConnection)                
+                dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)                
                 #Si llega un nuevo dato desde el dispositivo LoRa, salir de la predicción
                 print('id aNTERIOR: ', id_anterior)
                 print('id leído: ',dataset.iloc[0,0])
@@ -223,9 +223,9 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                     #Inserta en las base de datos el valor predicho correspondiente a la hora actual
                     cur = mynewConnection.cursor()
                     cadena_SQL = "INSERT INTO Tabla_General (dev_id, hour, latitude, longitude, predicted_latitude, predicted_longitude, predicted_hour, type_record,accy,gyroz) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-                    val = ('tarjeta5-cubecell',tim, lat, lon, lat, lon, tim, 1, acc, giro)
+                    val = ('tarjeta2-cubecell',tim, lat, lon, lat, lon, tim, 1, acc, giro)
                     time.sleep(0.2)
-                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta5-cubecell' order by id DESC LIMIT 1", mynewConnection)
+                    dataset = pd.read_sql("SELECT * from Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1", mynewConnection)
                     if (id_anterior!=dataset.iloc[0,0] or index_actual>=28): 
                         bol = False
                         print('fin de prediccion de tiempo, llegó un nuevo dato 2')
@@ -278,7 +278,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         # inicialmente hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)
         # genera la lectura de la base de datos de manera descendente para obtener los últimos valores
-        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta5-cubecell' order by id DESC", mynewConnection)       
+        dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC", mynewConnection)       
         #Pasa los valores de posición a tipo flotante
         
         #Se define la ventana o la cantidad de datos usados para predecir el siguiente valor de posición
@@ -301,8 +301,8 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         try:
             #Carga el modelo entrenado y el escalador de los datos de entrada
             import joblib
-            scaler = joblib.load('scaler_tarjeta5.save')
-            new_model = keras.models.load_model('model_LSTM_tarjeta5.h5')
+            scaler = joblib.load('scaler_tarjeta4.save')
+            new_model = keras.models.load_model('model_LSTM_tarjeta4.h5')
             # new_model = keras.models.load_model('model_bidirectional.h5')
         except OSError:
             #captura la excepcion cuando el archivo del modelo no existe en el disco
@@ -313,8 +313,9 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
         #predice la posición donde el valor es cero usando los valores de IMU enviados desde el dispositivo LoRa
         X_pred = x_test_normalized.copy()
         for i in range(window, long_data):
-            xin = (np.column_stack((X_pred[i - window:i, 0:2], x_test_normalized[i - window:i, 2:3],
-                                    x_test_normalized[i - window:i, 3:4]))).reshape(1, window, 4)
+            #xin = X_pred[i - window:i].reshape(1, window, 4)
+            xin = (np.column_stack((X_pred[i - window:i, 0:2], X_pred[i - window:i, 2:3],
+                                    X_pred[i - window:i, 3:4]))).reshape(1, window, 4)
             X_pred[i] = new_model.predict(xin)
         #desnormaliza la predicción
         prediction = scaler.inverse_transform(X_pred)
@@ -349,7 +350,6 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
             mynewConnection.close()
             read_db()
 
-#Funcion para monitorizar los datos de la base de datos y saber si ejecutar o no algun escenario
 def monitor(dataset2):
     #import MySQLdb
     import pandas as pd
@@ -362,7 +362,7 @@ def monitor(dataset2):
         #Lee el índice del último dato del dataset
         ultimo_id = dataset2.iloc[0, 0]
         #Lee el índice donde terminó la anterior prediccion.
-        iron = pd.read_csv('id_prediccion_tarjeta5.csv')
+        iron = pd.read_csv('id_prediccion_tarjeta2.csv')
         id_guardado = iron.iloc[0, 1]
 
         # guarda la diferencia de tiempo en segundos desde la hora actual hasta la hora del ultimo registro recibido.
@@ -393,7 +393,7 @@ def monitor(dataset2):
             #Se crea un Dataframe para guardar el valor del índice del último dato evaluado
             df = pd.DataFrame()
             df['valor'] = [dataset2.iloc[0, 0]]
-            df.to_csv('id_prediccion_tarjeta5.csv')
+            df.to_csv('id_prediccion_tarjeta2.csv')
             print('Guardar valor de id prediccion')
             #si el dato de posición que llegó es igual a cero, ejecutar prediccion escenario 2
             print('Valor medido de id', dataset2.iloc[0, 0])
@@ -409,6 +409,7 @@ def monitor(dataset2):
         elif s > (13):
             #último_id es el índice desde donde debe el algoritmo contar los valores para predecir
             #ejecutar_prediccion_escenario_1(ultimo_id)
+            #print('ejecutar escenario 1')
             read_db()
         else:
             print('No es necesario predecir')
@@ -419,7 +420,6 @@ def monitor(dataset2):
         time.sleep(3)
         read_db()
 
-#Funcion para leer el último dato de ala base de datos. Este dato se envía al monitor para que decida.
 def read_db():
     import time
     time.sleep(5.3)
@@ -427,7 +427,7 @@ def read_db():
     # inicialmente hace la conexion con la base de datos
     myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
     # genera la lectura de la base de datos
-    dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta5-cubecell' order by id DESC LIMIT 1",myConnection)
+    dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 1",myConnection)
     myConnection.close()    
     #Pasa los valores de posicion a tipo flotante
     """dataset['latitude']=dataset['latitude'].astype('float64')

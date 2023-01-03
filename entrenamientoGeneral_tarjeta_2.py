@@ -36,6 +36,8 @@ database = 'u813407238_seguimiento'
 #Longitud de entrenamiento
 len_training = 100
 
+#Funcion que ejecuta el entrenamiento cuando la funcion monitor decida que es posible
+# r indica el indice donde inici el entrenamiento, t donde terminó el ultimo entrenamiento, data es el conjunto de datos usado en el entrenamiento
 def ejecutar_entrenamiento(r,t,data):
     window = 30
     dataset = data
@@ -45,14 +47,16 @@ def ejecutar_entrenamiento(r,t,data):
     #ir = iron.iloc[0,1]
     
     #set_total = dataset[r:(r +len(dataset)-r)]
+    #Define el tamaño de los datos a ingresar al algoritmo de entrenamiento
     set_total = dataset[r:(len(dataset))]
-
+    #Define 80% de los datos para entrenamiento y 20% para validacion
     set_total.reset_index(inplace=True, drop=True)
     set_training = set_total[:-last]
     set_validation = set_total[-last-window:]
     set_training.reset_index(inplace=True, drop=True)
     set_validation.reset_index(inplace=True, drop=True)
 
+    #Extrae las variables a usar: latitud, longitud, aceleracion y giro
     x= np.column_stack((set_training.iloc[:,[4]],set_training.iloc[:,[5]],set_training.iloc[:,[8]],set_training.iloc[:,[12]]))
     # Normalización del set de entrenamiento
     scaler = MinMaxScaler(feature_range=(0,1))
@@ -91,7 +95,7 @@ def ejecutar_entrenamiento(r,t,data):
     from keras.layers import Bidirectional
     
     from tensorflow.keras.optimizers import SGD, Adam
-
+    #Funcion para optimizar el modelo 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
         #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
@@ -121,7 +125,7 @@ def ejecutar_entrenamiento(r,t,data):
         return modelo
     
     #from keras_tuner.tuners import BayesianOptimization
-
+    #Define el  tipo de algoritmo usado en optimizacion y el numero de intentos de optimizacion
     tuner = keras_tuner.BayesianOptimization(
     build_model,
     objective = 'mse',

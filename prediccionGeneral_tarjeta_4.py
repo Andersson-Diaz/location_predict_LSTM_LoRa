@@ -206,7 +206,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                 print('id leído: ',dataset.iloc[0,0])
                 if (id_anterior!=dataset.iloc[0,0] or index_actual>=28):
                     bol = False
-                    print('fin de prediccion de tiempo, llegó un nuevo dato 1')
+                    print('fin de prediccion de tiempo, llegó un nuevo dato o se alcanzó el limite')
                     break                    
                 #time.sleep(1)
                 #Mientras la diferencia de tiempo con la hora actual sea menor a un segundo y no se hallan enviado todos los datos predichos
@@ -349,6 +349,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
             mynewConnection.close()
             read_db()
 
+#Funcion para monitorizar los datos de la base de datos y saber si ejecutar o no algun escenario
 def monitor(dataset2):
     #import MySQLdb
     import pandas as pd
@@ -417,6 +418,7 @@ def monitor(dataset2):
         time.sleep(3)
         read_db()
 
+#Funcion para leer el último dato de ala base de datos. Este dato se envía al monitor para que decida.
 def read_db():
     import time
     time.sleep(5.3)

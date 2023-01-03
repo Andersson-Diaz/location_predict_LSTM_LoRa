@@ -36,6 +36,8 @@ database = 'u813407238_seguimiento'
 #Longitud de entrenamiento
 len_training = 100
 
+#Funcion que ejecuta el entrenamiento cuando la funcion monitor decida que es posible
+# r indica el indice donde inici el entrenamiento, t donde terminó el ultimo entrenamiento, data es el conjunto de datos usado en el entrenamiento
 def ejecutar_entrenamiento(r,t,data):
     window = 30
     dataset = data
@@ -45,8 +47,9 @@ def ejecutar_entrenamiento(r,t,data):
     #ir = iron.iloc[0,1]
     
     #set_total = dataset[r:(r +len(dataset)-r)]
+    #Define el tamaño de los datos a ingresar al algoritmo de entrenamiento
     set_total = dataset[r:(len(dataset))]
-
+    #Define 80% de los datos para entrenamiento y 20% para validacion
     set_total.reset_index(inplace=True, drop=True)
     set_training = set_total[:-last]
     set_validation = set_total[-last-window:]
@@ -54,7 +57,7 @@ def ejecutar_entrenamiento(r,t,data):
     set_validation.reset_index(inplace=True, drop=True)
 
     x= np.column_stack((set_training.iloc[:,[4]],set_training.iloc[:,[5]],set_training.iloc[:,[8]],set_training.iloc[:,[12]]))
-    # Normalización del set de entrenamiento
+    # Normalización del set de entrenamiento para equiparar variables
     scaler = MinMaxScaler(feature_range=(0,1))
     set_training_escaled = scaler.fit_transform(x)
     #Declaracion de vectores de entrada y salida para el entrenamiento
@@ -92,6 +95,7 @@ def ejecutar_entrenamiento(r,t,data):
     
     from tensorflow.keras.optimizers import SGD, Adam
 
+    #Funcion para optimizar el modelo 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
         #hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
@@ -121,47 +125,56 @@ def ejecutar_entrenamiento(r,t,data):
         return modelo
     
     #from keras_tuner.tuners import BayesianOptimization
-
+    #Define el  tipo de algoritmo usado en optimizacion y el numero de intentos de optimizacion
     tuner = keras_tuner.BayesianOptimization(
     build_model,
     objective = 'mse',
     overwrite=True,
     max_trials = 6)
 
+    #Extrae las características del set de validacion
     x_test= np.column_stack((set_validation.iloc[:,[4]],set_validation.iloc[:,[5]],set_validation.iloc[:,[8]],set_validation.iloc[:,[12]]))
-
+    #Normaliza el set de validacion
     x_test_n = scaler.transform(x_test)
 
+    #Declaracion de vectores de entrada y salida para el entrenamiento
     X_test = []
     Y_test = []
     for i in range(window,len(x_test_n)):
         X_test.append(x_test_n[i-window:i,0:5])
         Y_test.append(x_test_n[i,0:5])
-
+    #De listas a arrays
     X_test = np.array(X_test)
     Y_test = np.array(Y_test)
 
+    #Reforma el vector de validacion
     X_test = np.reshape(X_test, (X_test.shape[0],X_test.shape[1],4))
 
+    #Ejecuta la optimizacion con la cantidad de ciclos de entrenamiento
     tuner.search(X_train, Y_train,
              epochs=100,
              #overwrite=True,
              validation_data=(X_test, Y_test))
 
+    #Imprime y guarda los hiperparametros con los que se obtuvo el mejor resultado
     best_hps = tuner.get_best_hyperparameters(num_trials = 1)[0]
     print(best_hps.values)
     f = open ('best_values_tarjeta1_location.txt','w')
     f.write(str(best_hps.values))
     f.close()
 
+    #crea el modelo con los mejores hiperparámetros
     modelo = tuner.hypermodel.build(best_hps)
+    #Entrena el modelo anteriormente creado
     modelo.fit(X_train, Y_train,
                       epochs=200,batch_size=16,
                       validation_data=(X_test, Y_test))
     
     #print(modelo.summary())
+    #Guarda el modelo entrenado 
     modelo.save('model_LSTM_tarjeta1.h5')
     import joblib
+    #Guarda el escalador para este modelo
     joblib.dump(scaler, 'scaler_tarjeta1.save')                
     print('Entrenamiento ejecutado, valor de inicio: ', r, 'valor final: ', t)
     
@@ -177,7 +190,7 @@ def ejecutar_entrenamiento(r,t,data):
         a=(math.sin(rad*dlat/2))**2 + math.cos(rad*lat1)*math.cos(rad*lat2)*(math.sin(rad*dlon/2))**2
         distancia=2*R*math.asin(math.sqrt(a))
         return distancia
-    #Crea una lista con la distancia entre un punto de ubicacion y el punto anterior desde el set de entrenamiento
+    #Crea una lista con la distancia entre un punto de ubicacion y el punto anterior desde el set de entrenamiento y validacion
     training_distance = []   
     for i in range(0, len(set_training)-1):
         training_distance.append(haversine(set_training.iat[i,4],set_training.iat[i,5],set_training.iat[i+1,4],set_training.iat[i+1,5]))
@@ -186,7 +199,7 @@ def ejecutar_entrenamiento(r,t,data):
     for i in range(0, len(set_validation)-1):
         validation_distance.append(haversine(set_validation.iat[i,4],set_validation.iat[i,5],set_validation.iat[i+1,4],set_validation.iat[i+1,5]))
     
-    #toma la hora del conjunto de datos de entrenamiento
+    #toma la hora del conjunto de datos de entrenamiento y validacion
     training_time = set_training['hour']
     validation_time = set_validation['hour']
     #Calcula la diferencia de tiempo entre un punto de ubicacion y el anterior en el set de entrenamiento
@@ -335,7 +348,7 @@ def ejecutar_entrenamiento(r,t,data):
     fin = time.time()
     print('tiempo de ejecucion ',fin-inicio)
     
-
+#funcion que decide si es posible o no ejecutar el entrenamiento
 def monitor(dataset):
     print('inicio Monitor entrenamiento')
     #global ir
@@ -391,6 +404,7 @@ def monitor(dataset):
         #   print("The 'try except' is finished")   
         #  read_db()
 
+#Funcion que extrae todo los datos de la base de datos
 def read_db():
     import time
     time.sleep(5.3)
@@ -408,4 +422,5 @@ def read_db():
 
     monitor(dataset)
 
+#Inicia la ejecucion de todo el algoritmo
 read_db()

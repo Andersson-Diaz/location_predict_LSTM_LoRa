@@ -1,4 +1,5 @@
 
+#Archivo para inicializar los indices de inicio de prediccion de las tarjetas LoRa
 import pandas as pd
 df = pd.DataFrame()
 df['valor'] = [1]
@@ -25,5 +26,3 @@ df2['valor'] = [1]
 df2.to_csv('valor_final_inicio_entrenamiento.csv')
 
 print('índices inicializados')
-import sys
-sys.maxsize

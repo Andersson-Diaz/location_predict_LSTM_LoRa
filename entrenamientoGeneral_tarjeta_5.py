@@ -35,6 +35,8 @@ password = 'Seguimiento_lora_123'
 database = 'u813407238_seguimiento'
 #Longitud de entrenamiento
 len_training = 100
+#Funcion que ejecuta el entrenamiento cuando la funcion monitor decida que es posible
+# r indica el indice donde inici el entrenamiento, t donde terminó el ultimo entrenamiento, data es el conjunto de datos usado en el entrenamiento
 
 def ejecutar_entrenamiento(r,t,data):
     window = 30
@@ -45,7 +47,10 @@ def ejecutar_entrenamiento(r,t,data):
     #ir = iron.iloc[0,1]
     
     #set_total = dataset[r:(r +len(dataset)-r)]
+    #Define el tamaño de los datos a ingresar al algoritmo de entrenamiento
+
     set_total = dataset[r:(len(dataset))]
+    #Define 80% de los datos para entrenamiento y 20% para validacion
 
     set_total.reset_index(inplace=True, drop=True)
     set_training = set_total[:-last]
@@ -92,6 +97,7 @@ def ejecutar_entrenamiento(r,t,data):
     
     from tensorflow.keras.optimizers import SGD, Adam
 
+    #Funcion para optimizar el modelo 
     def build_model(hp):
     #definicion de hiperparámetros a evaluar
         hp_batch_size = hp.Int('batch_size', min_value = 8, max_value = 128, step = 8)
@@ -121,7 +127,7 @@ def ejecutar_entrenamiento(r,t,data):
         return modelo
     
     #from keras_tuner.tuners import BayesianOptimization
-
+    #Define el  tipo de algoritmo usado en optimizacion y el numero de intentos de optimizacion
     tuner = keras_tuner.BayesianOptimization(
     build_model,
     objective = 'mse',
@@ -129,8 +135,9 @@ def ejecutar_entrenamiento(r,t,data):
     max_trials = 6)
 
     x_test= np.column_stack((set_validation.iloc[:,[4]],set_validation.iloc[:,[5]],set_validation.iloc[:,[8]],set_validation.iloc[:,[12]]))
-
+    #Normalizacion del test de validacion
     x_test_n = scaler.transform(x_test)
+    #Declaracion de vectores de entrada y salida para el entrenamiento
 
     X_test = []
     Y_test = []

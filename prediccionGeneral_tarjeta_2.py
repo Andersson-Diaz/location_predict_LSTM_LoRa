@@ -14,6 +14,7 @@ import math
 import MySQLdb
 import datetime
 import pandas as pd
+# The above code is defining the column numbers of the variables in data set.
 #globales
 column_hour = 4
 column_lat =7
@@ -36,6 +37,7 @@ def haversine(lat1, lon1, lat2, lon2):
     distance = 2 * R * math.asin(math.sqrt(a))
     return distance
 
+#Funcion para ejecutar la prediccion del escenario 1
 def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
     try:
         print('inicio de ejecucion de escenario 1')
@@ -43,20 +45,20 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
         import pandas as pd
         import numpy as np
 
-        #Número de datos usados para predecir una posición
+        #Número de datos usados para predecir un punto geográfico
         window = 30        
-        # inicialmente hace la conexion con la base de datos
+        # inicia hace la conexion con la base de datos
         mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database)        
         # genera la lectura de la base de datos, solo los necesario para predecir
         dataset = pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta2-cubecell' order by id DESC LIMIT 31", mynewConnection)
         mynewConnection.close()
-
-        #Convierte los datos de posicion en flotantes           
+        #Si hay un dato nulo en el conjunto de datos extraído, no predecir. 
         if 0 in dataset.latitude.values or '' in dataset.latitude.values:
             print('no hay sufucientes valores para predecir')
             mynewConnection = MySQLdb.connect(host=hostname, user=username, passwd=password, db=database) 
 
         else:
+            #Convierte los datos de posicion en flotantes para poder operar
             dataset['latitude'] = dataset['latitude'].astype('float64')
             dataset['longitude'] = dataset['longitude'].astype('float64')
 
@@ -78,6 +80,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
                                     set_prediccion.iloc[1:len(set_prediccion), [column_gyro]]))
 
             try:
+                #Carga el modelo de prediccion entrenado
                 import joblib
                 scaler = joblib.load('scaler_tarjeta2.save')
                 #new_model = keras.models.load_model('model_bidirectional.h5')
@@ -94,10 +97,8 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
             X_test = np.array(X_test)
             X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 4))           
             
-            # Prediction con los primeros datos del set de validacion
-            # Using predicted values to predict next step
+            # Prediction con los primeros datos del set de validacion usando valores predichos
             print('Comienza la predicción de ubicación')
-
             X_pred = x_test_normalized.copy()
             for i in range(window, len(X_pred)):
                 xin = X_pred[i - window:i].reshape(1, window, 4)
@@ -268,7 +269,7 @@ def ejecutar_prediccion_escenario_1(id_anterior):  # Sin LoRa
            
 
 
-def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin GPS
+def ejecutar_prediccion_escenario2(ultimo_id):  # funcion para ejecutar la prediccion cuando hay conexión LoRa sin GPS
     try:
         print('inicio de ejecución de escenario 2')
         import MySQLdb
@@ -350,6 +351,7 @@ def ejecutar_prediccion_escenario2(ultimo_id):  # Cuando hay conexión LoRa sin 
             mynewConnection.close()
             read_db()
 
+#Funcion para monitorizar los datos de la base de datos y saber si ejecutar o no algun escenario
 def monitor(dataset2):
     #import MySQLdb
     import pandas as pd
@@ -408,7 +410,8 @@ def monitor(dataset2):
             # ¿Ha pasado mas de 13 segundos desde el ultimo dato enviado?
         elif s > (13):
             #último_id es el índice desde donde debe el algoritmo contar los valores para predecir
-            ejecutar_prediccion_escenario_1(ultimo_id)
+            #ejecutar_prediccion_escenario_1(ultimo_id)
+            read_db()
         else:
             print('No es necesario predecir')
             time.sleep(4)
@@ -418,6 +421,7 @@ def monitor(dataset2):
         time.sleep(3)
         read_db()
 
+#Funcion para leer el último dato de ala base de datos. Este dato se envía al monitor para que decida.
 def read_db():
     import time
     time.sleep(5.3)
