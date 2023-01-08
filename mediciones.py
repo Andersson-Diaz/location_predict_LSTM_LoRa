@@ -6,6 +6,8 @@ hostname = '82.180.175.58'
 username = 'u813407238_lora'
 password = 'Seguimiento_lora_123'
 database = 'u813407238_seguimiento'
+
+"""
 myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
 # genera la lectura de la base de datos
 dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' AND type_record = 1 order by id ASC",myConnection)
@@ -22,4 +24,22 @@ myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, d
 # genera la lectura de la base de datos
 dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta5-cubecell' AND type_record = 1 order by id ASC",myConnection)
 myConnection.close()    
-dataset.to_csv('tarjeta5_Spark.csv')
+dataset.to_csv('tarjeta5_Spark.csv')"""
+
+myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
+# genera la lectura de la base de datos
+dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta4-esp32lora' AND type_record between '1' AND '2' order by id ASC",myConnection)
+myConnection.close()    
+dataset.to_csv('tarjeta4_controlada.csv')
+
+myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
+# genera la lectura de la base de datos
+dataset2= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta1-cubecell' AND type_record between '1' AND '2' order by id ASC",myConnection)
+myConnection.close()    
+dataset2.to_csv('tarjeta1_controlada.csv')
+
+myConnection = MySQLdb.connect( host=hostname, user=username, passwd=password, db=database )    
+# genera la lectura de la base de datos
+dataset= pd.read_sql("SELECT * FROM Tabla_General WHERE dev_id = 'tarjeta5-cubecell' AND type_record between '1' AND '2' order by id ASC",myConnection)
+myConnection.close()    
+dataset.to_csv('tarjeta5_controlada.csv')

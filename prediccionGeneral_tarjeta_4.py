@@ -408,7 +408,8 @@ def monitor(dataset2):
             # ¿Ha pasado mas de 13 segundos desde el ultimo dato enviado?
         elif s > (13):
             #último_id es el índice desde donde debe el algoritmo contar los valores para predecir
-            ejecutar_prediccion_escenario_1(ultimo_id)
+            read_db()
+            #ejecutar_prediccion_escenario_1(ultimo_id)
         else:
             print('No es necesario predecir')
             time.sleep(4)
