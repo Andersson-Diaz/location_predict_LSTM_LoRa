@@ -21,6 +21,8 @@ error = []
 for i in range(0,len(tarjeta2)):
         error.append(haversine(tarjeta2['latitude'].iloc[i],tarjeta2['longitude'].iloc[i],tarjeta2['predicted_latitude'].iloc[i],tarjeta2['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta2 = pd.DataFrame()
+prediccion_escenario2_tarjeta2['date'] = tarjeta2['date']
+prediccion_escenario2_tarjeta2['hour'] = tarjeta2['hour']
 prediccion_escenario2_tarjeta2['real_latitude'] = tarjeta2['latitude']
 prediccion_escenario2_tarjeta2['real_longitude'] = tarjeta2['longitude']
 prediccion_escenario2_tarjeta2['predicted_latitude'] = tarjeta2['predicted_latitude']
@@ -39,6 +41,8 @@ error = []
 for i in range(0,len(tarjeta4)):
         error.append(haversine(tarjeta4['latitude'].iloc[i],tarjeta4['longitude'].iloc[i],tarjeta4['predicted_latitude'].iloc[i],tarjeta4['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta4 = pd.DataFrame()
+prediccion_escenario2_tarjeta4['date'] = tarjeta4['date']
+prediccion_escenario2_tarjeta4['hour'] = tarjeta4['hour']
 prediccion_escenario2_tarjeta4['real_latitude'] = tarjeta4['latitude']
 prediccion_escenario2_tarjeta4['real_longitude'] = tarjeta4['longitude']
 prediccion_escenario2_tarjeta4['predicted_latitude'] = tarjeta4['predicted_latitude']
@@ -57,6 +61,8 @@ error = []
 for i in range(0,len(tarjeta5)):
         error.append(haversine(tarjeta5['latitude'].iloc[i],tarjeta5['longitude'].iloc[i],tarjeta5['predicted_latitude'].iloc[i],tarjeta5['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta5 = pd.DataFrame()
+prediccion_escenario2_tarjeta5['date'] = tarjeta5['date']
+prediccion_escenario2_tarjeta5['hour'] = tarjeta5['hour']
 prediccion_escenario2_tarjeta5['real_latitude'] = tarjeta5['latitude']
 prediccion_escenario2_tarjeta5['real_longitude'] = tarjeta5['longitude']
 prediccion_escenario2_tarjeta5['predicted_latitude'] = tarjeta5['predicted_latitude']
@@ -75,13 +81,16 @@ error = []
 for i in range(0,len(tarjeta4_controlada)):
         error.append(haversine(tarjeta4_controlada['latitude'].iloc[i],tarjeta4_controlada['longitude'].iloc[i],tarjeta4_controlada['predicted_latitude'].iloc[i],tarjeta4_controlada['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta4_controlada = pd.DataFrame()
+prediccion_escenario2_tarjeta4_controlada['date'] = tarjeta4_controlada['date']
+prediccion_escenario2_tarjeta4_controlada['hour'] = tarjeta4_controlada['hour']
+prediccion_escenario2_tarjeta4_controlada['escenario'] = tarjeta4_controlada['type_record']
 prediccion_escenario2_tarjeta4_controlada['real_latitude'] = tarjeta4_controlada['latitude']
 prediccion_escenario2_tarjeta4_controlada['real_longitude'] = tarjeta4_controlada['longitude']
 prediccion_escenario2_tarjeta4_controlada['predicted_latitude'] = tarjeta4_controlada['predicted_latitude']
 prediccion_escenario2_tarjeta4_controlada['predicted_longitude'] = tarjeta4_controlada['predicted_longitude']
 prediccion_escenario2_tarjeta4_controlada['error[meters]'] = error
 prediccion_escenario2_tarjeta4_controlada.to_csv('real_and_predicted_position_route4_controlled.csv')
-print('Error medio en tarjeta 4 contolada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
+print('Error medio en tarjeta 4 controlada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
 
 #Calculo de error en ruta 1 CONTROLADA
 tarjeta1_controlada = pd.read_csv('tarjeta1_controlada.csv')
@@ -93,13 +102,16 @@ error = []
 for i in range(0,len(tarjeta1_controlada)):
         error.append(haversine(tarjeta1_controlada['latitude'].iloc[i],tarjeta1_controlada['longitude'].iloc[i],tarjeta1_controlada['predicted_latitude'].iloc[i],tarjeta1_controlada['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta1_controlada = pd.DataFrame()
+prediccion_escenario2_tarjeta1_controlada['date'] = tarjeta1_controlada['date']
+prediccion_escenario2_tarjeta1_controlada['hour'] = tarjeta1_controlada['hour']
+prediccion_escenario2_tarjeta1_controlada['escenario'] = tarjeta1_controlada['type_record']
 prediccion_escenario2_tarjeta1_controlada['real_latitude'] = tarjeta1_controlada['latitude']
 prediccion_escenario2_tarjeta1_controlada['real_longitude'] = tarjeta1_controlada['longitude']
 prediccion_escenario2_tarjeta1_controlada['predicted_latitude'] = tarjeta1_controlada['predicted_latitude']
 prediccion_escenario2_tarjeta1_controlada['predicted_longitude'] = tarjeta1_controlada['predicted_longitude']
 prediccion_escenario2_tarjeta1_controlada['error[meters]'] = error
 prediccion_escenario2_tarjeta1_controlada.to_csv('real_and_predicted_position_route1_controlled.csv')
-print('Error medio en tarjeta 1 contolada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
+print('Error medio en tarjeta 1 controlada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
 
 #Calculo de error en ruta 5 CONTROLADA
 tarjeta5_controlada = pd.read_csv('tarjeta5_controlada.csv')
@@ -111,10 +123,13 @@ error = []
 for i in range(0,len(tarjeta5_controlada)):
         error.append(haversine(tarjeta5_controlada['latitude'].iloc[i],tarjeta5_controlada['longitude'].iloc[i],tarjeta5_controlada['predicted_latitude'].iloc[i],tarjeta5_controlada['predicted_longitude'].iloc[i]))
 prediccion_escenario2_tarjeta5_controlada = pd.DataFrame()
+prediccion_escenario2_tarjeta5_controlada['date'] = tarjeta5_controlada['date']
+prediccion_escenario2_tarjeta5_controlada['hour'] = tarjeta5_controlada['hour']
+prediccion_escenario2_tarjeta5_controlada['escenario'] = tarjeta5_controlada['type_record']
 prediccion_escenario2_tarjeta5_controlada['real_latitude'] = tarjeta5_controlada['latitude']
 prediccion_escenario2_tarjeta5_controlada['real_longitude'] = tarjeta5_controlada['longitude']
 prediccion_escenario2_tarjeta5_controlada['predicted_latitude'] = tarjeta5_controlada['predicted_latitude']
 prediccion_escenario2_tarjeta5_controlada['predicted_longitude'] = tarjeta5_controlada['predicted_longitude']
 prediccion_escenario2_tarjeta5_controlada['error[meters]'] = error
 prediccion_escenario2_tarjeta5_controlada.to_csv('real_and_predicted_position_route5_controlled.csv')
-print('Error medio en tarjeta 5 contolada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
+print('Error medio en tarjeta 5 controlada: ' ,haversine(0,0,mse_lat,mse_lon), 'metros')
