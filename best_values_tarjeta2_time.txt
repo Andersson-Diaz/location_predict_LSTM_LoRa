@@ -1,1 +1,0 @@
-{'activation': 'elu', 'recurrent_dropout': 0.20604995639170842, 'neurons1': 20, 'neurons2': 100, 'learning_rate': 0.01}
